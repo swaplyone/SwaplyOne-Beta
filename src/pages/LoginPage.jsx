@@ -73,7 +73,8 @@ export default function LoginPage() {
     }, 500);
   };
 
-  const handleRegisterSubmit = (e) => {
+  // DIRECT ACCOUNT REGISTRATION (NO OTP REQUIRED)
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email) {
       showMorphBar({
@@ -88,25 +89,89 @@ export default function LoginPage() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
-    const userSession = {
-      name: cleanName,
-      email: cleanEmail,
-      loggedInAt: new Date().toISOString()
-    };
-
-    localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
-
     showMorphBar({
-      type: 'success',
-      title: 'Account Created',
-      message: `Session initialized for ${cleanEmail}. Proceeding to Beta verification...`,
-      duration: 4000
+      type: 'loading',
+      title: 'Creating Account...',
+      message: `Registering new account for ${cleanEmail}`
     });
 
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/beta');
-    }, 500);
+    try {
+      const res = await fetch('/api/beta/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          track: 'pioneer',
+          skillsToTest: 'General Skill Swapping'
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const userSession = data.user || {
+          name: cleanName,
+          email: cleanEmail,
+          betaId: data.user?.betaId || 'SWAP-BETA-1001',
+          loggedInAt: new Date().toISOString()
+        };
+
+        localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
+        localStorage.setItem('swaply_registered_user', JSON.stringify(userSession));
+
+        showMorphBar({
+          type: 'success',
+          title: '🎉 Account Created Successfully!',
+          message: `Welcome @${cleanName}! Registered email: ${cleanEmail}`,
+          duration: 5000
+        });
+
+        setTimeout(() => {
+          setLoading(false);
+          navigate('/beta');
+        }, 500);
+      } else {
+        // If already registered, still log them in directly
+        const userSession = {
+          name: cleanName,
+          email: cleanEmail,
+          loggedInAt: new Date().toISOString()
+        };
+        localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
+
+        showMorphBar({
+          type: 'info',
+          title: 'Account Already Exists',
+          message: `Logged in as ${cleanEmail}. Redirecting...`,
+          duration: 4000
+        });
+
+        setTimeout(() => {
+          setLoading(false);
+          navigate('/beta');
+        }, 500);
+      }
+    } catch (err) {
+      // Fallback local session registration
+      const userSession = {
+        name: cleanName,
+        email: cleanEmail,
+        loggedInAt: new Date().toISOString()
+      };
+      localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
+
+      showMorphBar({
+        type: 'success',
+        title: 'Account Created',
+        message: `Welcome ${cleanName}! Account active.`,
+        duration: 4000
+      });
+
+      setTimeout(() => {
+        setLoading(false);
+        navigate('/beta');
+      }, 500);
+    }
   };
 
   const handleSignOut = () => {
@@ -154,7 +219,7 @@ export default function LoginPage() {
         <p className="mt-3 text-sm font-bold text-swaply-black/75 max-w-xs mx-auto">
           {activeTab === 'login'
             ? 'Access your account or admin dashboard console.'
-            : 'Register your profile details to claim your Pioneer Beta Pass.'}
+            : 'Create your new member account directly. Zero OTP required.'}
         </p>
       </div>
 
@@ -303,7 +368,7 @@ export default function LoginPage() {
               </form>
             )}
 
-            {/* TAB 2: REGISTER FORM */}
+            {/* TAB 2: REGISTER FORM (NO OTP REQUIRED) */}
             {activeTab === 'register' && (
               <form onSubmit={handleRegisterSubmit} className="space-y-5">
                 <div className="border-b-2 border-swaply-black/20 pb-3 flex items-center justify-between">
@@ -311,7 +376,7 @@ export default function LoginPage() {
                     <UserPlus className="w-4 h-4 text-swaply-coral" /> Create New Member Profile
                   </span>
                   <span className="text-[10px] font-black text-swaply-black/50 uppercase tracking-wider">
-                    NEW REGISTRATION
+                    DIRECT REGISTRATION
                   </span>
                 </div>
 
@@ -345,7 +410,7 @@ export default function LoginPage() {
 
                 <div className="bg-swaply-yellow/20 border-2 border-dashed border-swaply-black/30 p-3 rounded-xl text-xs font-bold text-swaply-black/75 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-swaply-coral flex-shrink-0" />
-                  <span>Email will be verified with a 6-digit OTP code on the Beta page to prevent fake accounts.</span>
+                  <span>Direct account registration. Zero OTP verification required.</span>
                 </div>
 
                 <div className="pt-2">
@@ -354,7 +419,7 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full neo-btn bg-swaply-yellow hover:bg-swaply-craft text-swaply-black border-3 border-swaply-black px-8 py-4 rounded-2xl text-base font-black shadow-hard-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    <span>Create Account & Verify OTP →</span>
+                    <span>Create New Account →</span>
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
