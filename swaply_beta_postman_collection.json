@@ -1,0 +1,241 @@
+{
+	"info": {
+		"_postman_id": "swaply-beta-api-v1",
+		"name": "Swaply Beta Registration & Admin API Collection",
+		"description": "Postman API collection for testing Swaply Beta registration, OTP verification, email service logs, and admin dashboard endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "OTP - Send Code",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"test.pioneer@swaply.app\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/otp/send",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"otp",
+						"send"
+					]
+				}
+			}
+		},
+		{
+			"name": "OTP - Verify Code",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"test.pioneer@swaply.app\",\n  \"otp\": \"123456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/otp/verify",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"otp",
+						"verify"
+					]
+				}
+			}
+		},
+		{
+			"name": "Beta - Register User",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Alex Vance\",\n  \"email\": \"test.pioneer@swaply.app\",\n  \"track\": \"tester\",\n  \"skillsToTest\": \"Web Dev & Coding Swaps\",\n  \"experience\": \"Excited to test early video call matching.\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/beta/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"beta",
+						"register"
+					]
+				}
+			}
+		},
+		{
+			"name": "Beta - Check System Status",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:5000/api/beta/status",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"beta",
+						"status"
+					]
+				}
+			}
+		},
+		{
+			"name": "Admin - Get Stats Summary",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:5000/api/admin/stats",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"stats"
+					]
+				}
+			}
+		},
+		{
+			"name": "Admin - Update Registration Limit & Status",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"maxLimit\": 150,\n  \"enabled\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/admin/settings",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"settings"
+					]
+				}
+			}
+		},
+		{
+			"name": "Admin - Get Registered Users",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:5000/api/admin/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"users"
+					]
+				}
+			}
+		},
+		{
+			"name": "Admin - Delete User",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:5000/api/admin/users/usr_1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"users",
+						"usr_1"
+					]
+				}
+			}
+		},
+		{
+			"name": "Admin - View Email Logs",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:5000/api/admin/email-logs",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"email-logs"
+					]
+				}
+			}
+		},
+		{
+			"name": "Admin - Export CSV",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:5000/api/admin/export-csv",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"admin",
+						"export-csv"
+					]
+				}
+			}
+		}
+	]
+}
