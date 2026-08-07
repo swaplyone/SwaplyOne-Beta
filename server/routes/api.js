@@ -78,10 +78,10 @@ router.post('/otp/send', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Beta registration limit reached (150 users max).' });
     }
 
-    // Check if already registered (Strict single-registration policy)
-    const existingUser = users.find(u => u.email === cleanEmail);
+    // Check if Beta Pass already claimed for this email
+    const existingUser = users.find(u => u.email === cleanEmail && u.betaId);
     if (existingUser) {
-      return res.status(400).json({ success: false, message: 'This email is already registered on Swaply Beta. Only 1 registration per member is permitted to eliminate fake users and protect platform policy.' });
+      return res.status(400).json({ success: false, message: `Beta Pass (${existingUser.betaId}) already claimed for ${cleanEmail}.` });
     }
 
     // Check OTP cooldown
@@ -236,9 +236,9 @@ router.post('/beta/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Beta registration limit reached.' });
     }
 
-    const existingUser = users.find(u => u.email === cleanEmail);
+    const existingUser = users.find(u => u.email === cleanEmail && u.betaId);
     if (existingUser) {
-      return res.status(400).json({ success: false, message: 'This email is already registered on Swaply Beta. Only 1 registration per member is permitted.' });
+      return res.status(400).json({ success: false, message: `Beta Pass (${existingUser.betaId}) already claimed for ${cleanEmail}.` });
     }
 
     // Generate Beta ID format (e.g. SWAP-BETA-1003)
