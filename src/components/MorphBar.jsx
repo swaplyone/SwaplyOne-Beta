@@ -58,6 +58,31 @@ export default function MorphBar({
   const [activeUser, setActiveUser] = useState(currentUser || null);
   const [userMeta, setUserMeta] = useState(userDetails || null);
 
+  // Scroll Auto-Hide State
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  // Scroll Direction Listener for Auto-Hiding Morph Bar on Scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      // Always show if near top (<60px) or if Morph Bar is expanded in non-idle mode
+      if (currentScrollY < 60 || mode !== 'idle') {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current + 8) {
+        // Scrolling Down -> Hide Morph Bar
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY.current - 8) {
+        // Scrolling Up -> Show Morph Bar
+        setIsVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [mode]);
+
   useEffect(() => {
     const syncUserSession = () => {
       try {
@@ -212,7 +237,7 @@ export default function MorphBar({
         left: 0,
         right: 0,
         zIndex: 10000,
-        pointerEvents: 'none',
+        pointerEvents: isVisible ? 'auto' : 'none',
         display: 'flex',
         justifyContent: 'center',
         padding: '0 16px'
@@ -222,9 +247,14 @@ export default function MorphBar({
       <LayoutGroup>
         <motion.div
           layout
+          initial={{ opacity: 1, y: 0 }}
+          animate={{
+            opacity: isVisible ? 1 : 0,
+            y: isVisible ? 0 : -85
+          }}
           transition={springTransition}
           style={{
-            pointerEvents: 'auto',
+            pointerEvents: isVisible ? 'auto' : 'none',
             background: '#FFFDF8',
             border: '2.5px solid #1B2233',
             boxShadow: '6px 6px 0px 0px #1B2233',
@@ -653,7 +683,7 @@ export default function MorphBar({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <button
                     onClick={() => { navigate('/login'); setMode('idle'); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.66rem 0.85rem', borderRadius: '12px', background: '#D85B3E', border: '1.5px solid #1B2233', color: '#FFF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.66rem', padding: '0.66rem 0.85rem', borderRadius: '12px', background: '#D85B3E', border: '1.5px solid #1B2233', color: '#FFF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}
                   >
                     <Power size={16} /> Sign In to Account
                   </button>
