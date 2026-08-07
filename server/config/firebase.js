@@ -1,5 +1,6 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -55,6 +56,7 @@ class LocalFirestoreStore {
 const localStore = new LocalFirestoreStore();
 
 let db = null;
+let auth = null;
 let isFirebaseConnected = false;
 
 // Attempt Firebase Admin SDK Connection
@@ -69,6 +71,7 @@ try {
       });
     }
     db = getFirestore();
+    auth = getAuth();
     isFirebaseConnected = true;
     console.log(`🔥 Firebase Admin SDK connected to project: ${serviceAccount.project_id}`);
   } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
@@ -83,6 +86,7 @@ try {
       });
     }
     db = getFirestore();
+    auth = getAuth();
     isFirebaseConnected = true;
     console.log(`🔥 Firebase Admin SDK connected to project: ${process.env.FIREBASE_PROJECT_ID}`);
   } else {
@@ -92,4 +96,4 @@ try {
   console.warn('⚠️ Firebase Admin initialization error (using fallback store):', error.message);
 }
 
-export { db, isFirebaseConnected, localStore };
+export { db, auth, isFirebaseConnected, localStore };

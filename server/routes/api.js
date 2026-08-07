@@ -1,6 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
-import { db, isFirebaseConnected, localStore } from '../config/firebase.js';
+import { db, auth, isFirebaseConnected, localStore } from '../config/firebase.js';
 import { sendOtpEmail, sendRegistrationSuccessEmail, sendWelcomeEmail } from '../services/emailService.js';
 
 const router = express.Router();
@@ -333,6 +333,24 @@ router.post('/auth/register', async (req, res) => {
 
     const { hash, salt } = hashPassword(password);
     const userId = existingUser ? existingUser.id : `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    // Create User in Firebase Auth Service
+    if (isFirebaseConnected && auth) {
+      try {
+        await auth.createUser({
+          uid: userId,
+          email: cleanEmail,
+          password: password,
+          displayName: cleanName || cleanEmail.split('@')[0]
+        });
+        console.log(`🔥 Firebase Auth User created: ${cleanEmail}`);
+      } catch (authErr) {
+        if (authErr.code === 'auth/email-already-exists') {
+          return res.status(400).json({ success: false, message: 'An account with this email already exists in Firebase Auth.' });
+        }
+        console.warn('Firebase Auth creation notice:', authErr.message);
+      }
+    }
 
     const userData = {
       id: userId,
