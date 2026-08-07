@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
+import { OtpInput } from './OtpInput';
 import { PaperClip, BinderClip, MaskingTape } from './PaperCraft';
 
 export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const { showMorphBar } = useMorphBar();
-  const [step, setStep] = useState('form'); // 'form' | 'success'
+  const [step, setStep] = useState('form'); // 'form' | 'otp' | 'success'
 
   // Single Track Form State
   const [formData, setFormData] = useState({
@@ -29,6 +30,8 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   });
 
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [otpValue, setOtpValue] = useState('');
   const [registeredUser, setRegisteredUser] = useState(null);
 
   // Check existing registration or login session in localStorage on mount
@@ -65,6 +68,15 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     } catch (e) {}
   }, []);
 
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
+
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/beta/status');
@@ -85,7 +97,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     }
   };
 
-  // DIRECT REGISTRATION FORM SUBMISSION (NO OTP REQUIRED)
+  // STEP 1: Submit Form -> Send OTP Code to Locked Email
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email) {
@@ -100,11 +112,133 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     setLoading(true);
     showMorphBar({
       type: 'loading',
-      title: 'Creating Pioneer Account...',
-      message: `Registering ${formData.email} directly on Swaply Beta`
+      title: 'Sending Verification Code...',
+      message: `Sending 6-digit OTP code to ${formData.email}`
     });
 
     try {
+      const res = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showMorphBar({
+          type: 'success',
+          title: 'Verification Code Sent',
+          message: data.message || `Check ${formData.email} for your 6-digit code.`,
+          duration: 5000
+        });
+        setCooldown(data.cooldownSeconds || 60);
+        setStep('otp');
+      } else {
+        showMorphBar({
+          type: 'error',
+          title: 'Registration Policy Blocked',
+          message: data.message || 'Unable to request verification code.'
+        });
+      }
+    } catch (err) {
+      showMorphBar({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not connect to registration server.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP Code
+  const handleResendOtp = async () => {
+    if (cooldown > 0) return;
+    setLoading(true);
+    showMorphBar({
+      type: 'loading',
+      title: 'Resending Verification Code...',
+      message: `Sending new OTP code to ${formData.email}`
+    });
+
+    try {
+      const res = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showMorphBar({
+          type: 'success',
+          title: 'OTP Resent Successfully',
+          message: `New code sent to ${formData.email}`
+        });
+        setCooldown(60);
+      } else {
+        showMorphBar({
+          type: 'error',
+          title: 'Resend Failed',
+          message: data.message
+        });
+      }
+    } catch (err) {
+      showMorphBar({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Failed to connect to OTP service.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // STEP 2: Verify OTP & Complete Pioneer Pass Registration into Firebase
+  const handleVerifyOtp = async (codeToVerify) => {
+    const code = codeToVerify || otpValue;
+    if (!code || code.length < 6) {
+      showMorphBar({
+        type: 'warning',
+        title: 'Invalid OTP Length',
+        message: 'Please enter all 6 digits of your verification code.'
+      });
+      return;
+    }
+
+    setLoading(true);
+    showMorphBar({
+      type: 'loading',
+      title: 'Verifying OTP Code...',
+      message: 'Checking code against secure verification server'
+    });
+
+    try {
+      // 1. Verify OTP
+      const verifyRes = await fetch('/api/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, otp: code })
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success) {
+        showMorphBar({
+          type: 'error',
+          title: 'Invalid Verification Code',
+          message: verifyData.message || 'Verification code failed.'
+        });
+        setLoading(false);
+        return;
+      }
+
+      showMorphBar({
+        type: 'success',
+        title: 'Email Verified Successfully',
+        message: 'Completing registration & issuing Pioneer Pass...'
+      });
+
+      // 2. Complete Pioneer Pass Registration
       const regRes = await fetch('/api/beta/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +247,8 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
           email: formData.email,
           track: 'pioneer',
           skillsToTest: formData.skillsToTest,
-          experience: formData.experience
+          experience: formData.experience,
+          verificationToken: verifyData.verificationToken
         })
       });
       const regData = await regRes.json();
@@ -127,7 +262,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
         showMorphBar({
           type: 'success',
-          title: '🎉 DONE! Registered Successfully',
+          title: '🎉 DONE! Registration Confirmed',
           message: `Confirmation email sent to ${regData.user.email}. Beta Pass: ${regData.user.betaId}`,
           duration: 7000
         });
@@ -147,8 +282,8 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       } else {
         showMorphBar({
           type: 'error',
-          title: 'Registration Blocked',
-          message: regData.message || 'Registration failed. Please check policy rules.'
+          title: 'Registration Policy Blocked',
+          message: regData.message || 'Registration failed.'
         });
       }
     } catch (err) {
@@ -200,7 +335,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
       <AnimatePresence mode="wait">
         
-        {/* ==================== STEP 1: REGISTRATION FORM (NO OTP REQUIRED) ==================== */}
+        {/* ==================== STEP 1: REGISTRATION FORM ==================== */}
         {step === 'form' && (
           <motion.div
             key="form"
@@ -211,7 +346,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
           >
             <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative">
               <PaperClip className="top-3 right-4 rotate-[15deg]" />
-              <MaskingTape text="DIRECT BETA ENTRY" className="-top-3 left-6 -rotate-2" />
+              <MaskingTape text="PIONEER BETA ENTRY" className="-top-3 left-6 -rotate-2" />
 
               <form onSubmit={handleFormSubmit} className="space-y-5 pt-2">
                 
@@ -254,7 +389,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                     }`}
                   />
                   <p className="text-[11px] font-bold text-swaply-black/60 mt-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-swaply-coral" /> Single-registration policy enforced.
+                    <ShieldCheck className="w-3.5 h-3.5 text-swaply-coral" /> Single-registration policy enforced. Email verified via 6-digit OTP code.
                   </p>
                 </div>
 
@@ -297,10 +432,10 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                   className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-4 rounded-2xl text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {loading ? (
-                    <span>Registering Account...</span>
+                    <span>Sending OTP Code...</span>
                   ) : (
                     <>
-                      <span>Complete Registration & Claim Pass →</span>
+                      <span>Send OTP Verification Code →</span>
                       <Send className="w-4 h-4" />
                     </>
                   )}
@@ -311,7 +446,72 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
           </motion.div>
         )}
 
-        {/* ==================== STEP 2: REGISTRATION CONFIRMED TICKET PASS ==================== */}
+        {/* ==================== STEP 2: OTP VERIFICATION SCREEN ==================== */}
+        {step === 'otp' && (
+          <motion.div
+            key="otp"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="max-w-md mx-auto"
+          >
+            <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative text-center space-y-5">
+              <PaperClip className="top-3 right-4 rotate-12" />
+              <MaskingTape text="VERIFY EMAIL OTP" className="-top-3 left-6 -rotate-2" />
+
+              <div className="w-14 h-14 bg-swaply-yellow border-2 border-swaply-black rounded-2xl mx-auto flex items-center justify-center shadow-hard-sm">
+                <Mail className="w-7 h-7 text-swaply-black" />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-black text-swaply-black">Enter Verification Code</h3>
+                <p className="text-xs font-bold text-swaply-black/70 mt-1">
+                  We have sent a 6-digit code to <strong className="text-swaply-coral">{formData.email}</strong>.
+                </p>
+              </div>
+
+              {/* 6-DIGIT OTP INPUT */}
+              <div className="py-2">
+                <OtpInput
+                  value={otpValue}
+                  onChange={setOtpValue}
+                  onComplete={(code) => handleVerifyOtp(code)}
+                />
+              </div>
+
+              {/* VERIFY BUTTON */}
+              <button
+                onClick={() => handleVerifyOtp()}
+                disabled={loading || otpValue.length < 6}
+                className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-3.5 rounded-2xl text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {loading ? <span>Verifying Code...</span> : <span>Verify & Claim Beta Pass →</span>}
+              </button>
+
+              {/* RESEND & CHANGE EMAIL OPTIONS */}
+              <div className="flex items-center justify-between text-xs font-black pt-2 border-t border-dashed border-swaply-black/20">
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={cooldown > 0 || loading}
+                  className="text-swaply-coral hover:underline disabled:opacity-40"
+                >
+                  {cooldown > 0 ? `Resend Code (${cooldown}s)` : 'Resend Code'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('form')}
+                  className="text-swaply-black/70 hover:text-swaply-black"
+                >
+                  Change Email
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ==================== STEP 3: REGISTRATION CONFIRMED TICKET PASS ==================== */}
         {step === 'success' && registeredUser && (
           <motion.div
             key="success"
