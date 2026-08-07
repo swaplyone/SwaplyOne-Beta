@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert } from 'lucide-react';
+import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { OtpInput } from './OtpInput';
 import { PaperClip, BinderClip, MaskingTape } from './PaperCraft';
@@ -10,15 +10,30 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const { showMorphBar } = useMorphBar();
   const [step, setStep] = useState('form'); // 'form' | 'otp' | 'success'
 
-  // Single Track Form State
+  // Structured Beta Registration Form State
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
+    username: '',
     email: '',
-    skillsToTest: 'Web Dev & Coding Swaps',
-    experience: ''
+    occupation: 'Student',
+    country: 'United States',
+    referralSource: 'Social Media',
+    betaReason: '',
+    agreeTerms: false,
+    agreePrivacy: false,
+    agreeUpdates: true
   });
 
   const [isEmailLocked, setIsEmailLocked] = useState(false);
+
+  // Live Username Availability Check State
+  const [usernameStatus, setUsernameStatus] = useState({
+    checking: false,
+    available: null,
+    message: ''
+  });
+  const usernameCheckTimeout = useRef(null);
 
   // System Status State
   const [status, setStatus] = useState({
@@ -57,9 +72,16 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       if (savedSession) {
         const session = JSON.parse(savedSession);
         if (session && session.email) {
+          const parts = (session.name || '').split(' ');
+          const fName = parts[0] || '';
+          const lName = parts.slice(1).join(' ') || '';
+          const uName = session.email.split('@')[0].replace(/[^a-z0-9_]/g, '');
+
           setFormData(prev => ({
             ...prev,
-            name: session.name || prev.name,
+            firstName: prev.firstName || fName,
+            lastName: prev.lastName || lName,
+            username: prev.username || uName,
             email: session.email
           }));
           setIsEmailLocked(true);
@@ -76,6 +98,35 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [cooldown]);
+
+  // Live Username Availability Checker
+  const handleUsernameChange = (val) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setFormData(prev => ({ ...prev, username: clean }));
+
+    if (!clean || clean.length < 3) {
+      setUsernameStatus({ checking: false, available: null, message: '' });
+      return;
+    }
+
+    setUsernameStatus({ checking: true, available: null, message: 'Checking availability...' });
+
+    if (usernameCheckTimeout.current) clearTimeout(usernameCheckTimeout.current);
+
+    usernameCheckTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/username/check?username=${encodeURIComponent(clean)}`);
+        const data = await res.json();
+        setUsernameStatus({
+          checking: false,
+          available: data.available,
+          message: data.message
+        });
+      } catch (err) {
+        setUsernameStatus({ checking: false, available: true, message: 'Username format valid.' });
+      }
+    }, 400);
+  };
 
   const fetchStatus = async () => {
     try {
@@ -100,11 +151,29 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   // STEP 1: Submit Form -> Send OTP Code to Locked Email
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) {
+    if (!formData.firstName || !formData.lastName || !formData.username || !formData.email) {
       showMorphBar({
         type: 'error',
-        title: 'Missing Fields',
-        message: 'Please enter your full name and valid email address.'
+        title: 'Missing Required Fields',
+        message: 'Please fill out First Name, Last Name, Username, and Email.'
+      });
+      return;
+    }
+
+    if (usernameStatus.available === false) {
+      showMorphBar({
+        type: 'error',
+        title: 'Username Taken',
+        message: 'Please choose a different unique username.'
+      });
+      return;
+    }
+
+    if (!formData.agreeTerms || !formData.agreePrivacy) {
+      showMorphBar({
+        type: 'warning',
+        title: 'Agreements Required',
+        message: 'Please agree to the Terms & Conditions and Privacy Policy.'
       });
       return;
     }
@@ -136,7 +205,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       } else {
         showMorphBar({
           type: 'error',
-          title: 'Registration Policy Blocked',
+          title: 'Registration Blocked',
           message: data.message || 'Unable to request verification code.'
         });
       }
@@ -243,11 +312,15 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          username: formData.username,
           email: formData.email,
+          occupation: formData.occupation,
+          country: formData.country,
+          referralSource: formData.referralSource,
+          betaReason: formData.betaReason,
           track: 'pioneer',
-          skillsToTest: formData.skillsToTest,
-          experience: formData.experience,
           verificationToken: verifyData.verificationToken
         })
       });
@@ -298,7 +371,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   };
 
   return (
-    <div className="min-h-screen bg-paper pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative overflow-hidden">
+    <div className="min-h-screen bg-paper pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto relative overflow-hidden">
       
       {/* BACKGROUND ELEMENTS */}
       <div className="absolute top-10 right-10 w-72 h-72 bg-swaply-yellow/15 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -314,14 +387,14 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
         <div className="inline-flex items-center gap-2 bg-paper-card border border-swaply-black/20 px-3.5 py-1 rounded-full text-xs font-black shadow-sm mx-auto block">
           <Sparkles className="w-3.5 h-3.5 text-swaply-coral" />
-          <span className="uppercase tracking-wider">OFFICIAL PIONEER BETA REGISTRATION</span>
+          <span className="uppercase tracking-wider">SWAPLYONE BETA REGISTRATION</span>
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-black text-swaply-black tracking-tight">
           Claim Your Pioneer Beta Pass
         </h1>
         <p className="text-sm sm:text-base font-semibold text-swaply-black/70 max-w-lg mx-auto">
-          Direct peer matching priority, founder channel access, and lifetime pioneer badges.
+          Direct 1-on-1 video matching priority, founder channel access, and early-adopter privileges.
         </p>
 
         {/* SYSTEM STATUS BADGE */}
@@ -342,93 +415,245 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            className="max-w-xl mx-auto"
+            className="max-w-2xl mx-auto"
           >
             <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative">
               <PaperClip className="top-3 right-4 rotate-[15deg]" />
               <MaskingTape text="PIONEER BETA ENTRY" className="-top-3 left-6 -rotate-2" />
 
-              <form onSubmit={handleFormSubmit} className="space-y-5 pt-2">
+              <form onSubmit={handleFormSubmit} className="space-y-6 pt-2">
                 
-                {/* FULL NAME */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-swaply-black mb-1.5">
-                    Full Name <span className="text-swaply-coral">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Jordan Smith"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
-                  />
-                </div>
-
-                {/* EMAIL ADDRESS */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-black uppercase tracking-wider text-swaply-black">
-                      Email Address <span className="text-swaply-coral">*</span>
-                    </label>
-                    {isEmailLocked && (
-                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Locked to Session
-                      </span>
-                    )}
+                {/* 1. BASIC INFORMATION SECTION */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-dashed border-swaply-black/20">
+                    <UserCheck className="w-4 h-4 text-swaply-coral" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-swaply-black">Basic Information</h3>
                   </div>
-                  <input
-                    type="email"
-                    required
-                    readOnly={isEmailLocked}
-                    placeholder="jordan@example.com"
-                    value={formData.email}
-                    onChange={(e) => !isEmailLocked && setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold shadow-hard-sm focus:outline-none ${
-                      isEmailLocked ? 'bg-slate-100 text-swaply-black/70 cursor-not-allowed' : 'bg-white text-swaply-black focus:ring-2 focus:ring-swaply-yellow'
-                    }`}
-                  />
-                  <p className="text-[11px] font-bold text-swaply-black/60 mt-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-swaply-coral" /> Single-registration policy enforced. Email verified via 6-digit OTP code.
-                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* FIRST NAME */}
+                    <div>
+                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                        First Name <span className="text-swaply-coral">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Jordan"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                      />
+                    </div>
+
+                    {/* LAST NAME */}
+                    <div>
+                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                        Last Name <span className="text-swaply-coral">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Smith"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* USERNAME WITH LIVE AVAILABILITY CHECK */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
+                        <AtSign className="w-3.5 h-3.5 text-swaply-coral" /> Username <span className="text-swaply-coral">*</span>
+                      </label>
+                      {usernameStatus.message && (
+                        <span className={`text-[11px] font-extrabold flex items-center gap-1 ${
+                          usernameStatus.checking ? 'text-amber-700' : usernameStatus.available ? 'text-emerald-700' : 'text-rose-700'
+                        }`}>
+                          {usernameStatus.checking && <RefreshCw className="w-3 h-3 animate-spin" />}
+                          {usernameStatus.available === true && <Check className="w-3 h-3" />}
+                          {usernameStatus.available === false && <ShieldAlert className="w-3 h-3" />}
+                          {usernameStatus.message}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-swaply-black/50 text-sm">@</span>
+                      <input
+                        type="text"
+                        required
+                        placeholder="jordansmith"
+                        value={formData.username}
+                        onChange={(e) => handleUsernameChange(e.target.value)}
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl pl-8 pr-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                      />
+                    </div>
+                    <p className="text-[11px] font-semibold text-swaply-black/60 mt-1">Unique handle for peer matching and video calls.</p>
+                  </div>
+
+                  {/* EMAIL ADDRESS */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
+                        <Mail className="w-3.5 h-3.5 text-swaply-coral" /> Email Address <span className="text-swaply-coral">*</span>
+                      </label>
+                      {isEmailLocked && (
+                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Locked to Session
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="email"
+                      required
+                      readOnly={isEmailLocked}
+                      placeholder="jordan@example.com"
+                      value={formData.email}
+                      onChange={(e) => !isEmailLocked && setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className={`w-full border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold shadow-hard-sm focus:outline-none ${
+                        isEmailLocked ? 'bg-slate-100 text-swaply-black/70 cursor-not-allowed' : 'bg-white text-swaply-black focus:ring-2 focus:ring-swaply-yellow'
+                      }`}
+                    />
+                  </div>
                 </div>
 
-                {/* SKILLS TO TEST */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-swaply-black mb-1.5">
-                    Primary Skill Focus
-                  </label>
-                  <select
-                    value={formData.skillsToTest}
-                    onChange={(e) => setFormData(prev => ({ ...prev, skillsToTest: e.target.value }))}
-                    className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
-                  >
-                    <option value="Web Dev & Coding Swaps">Web Dev & Coding Swaps</option>
-                    <option value="UI/UX & Product Design">UI/UX & Product Design</option>
-                    <option value="Languages & Public Speaking">Languages & Public Speaking</option>
-                    <option value="Music & Creative Arts">Music & Creative Arts</option>
-                    <option value="Business & Startup Mentorship">Business & Startup Mentorship</option>
-                  </select>
+                {/* 2. ABOUT YOU SECTION */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-dashed border-swaply-black/20">
+                    <Briefcase className="w-4 h-4 text-swaply-coral" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-swaply-black">About You</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* OCCUPATION */}
+                    <div>
+                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                        Occupation <span className="text-swaply-coral">*</span>
+                      </label>
+                      <select
+                        value={formData.occupation}
+                        onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Working Professional">Working Professional</option>
+                        <option value="Freelancer">Freelancer</option>
+                        <option value="Founder">Founder</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    {/* COUNTRY */}
+                    <div>
+                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5 flex items-center gap-1">
+                        <Globe className="w-3.5 h-3.5 text-swaply-coral" /> Country <span className="text-swaply-coral">*</span>
+                      </label>
+                      <select
+                        value={formData.country}
+                        onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
+                      >
+                        <option value="United States">United States</option>
+                        <option value="India">India</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Canada">Canada</option>
+                        <option value="Germany">Germany</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Singapore">Singapore</option>
+                        <option value="Other Country">Other Country</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                {/* EXPERIENCE / BIO */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-swaply-black mb-1.5">
-                    What would you like to exchange or learn?
+                {/* 3. OPTIONAL SECTION */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-dashed border-swaply-black/20">
+                    <FileText className="w-4 h-4 text-swaply-coral" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-swaply-black">Optional Details</h3>
+                  </div>
+
+                  {/* HOW DID YOU HEAR ABOUT SWAPLYONE */}
+                  <div>
+                    <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                      How did you hear about SwaplyOne?
+                    </label>
+                    <select
+                      value={formData.referralSource}
+                      onChange={(e) => setFormData(prev => ({ ...prev, referralSource: e.target.value }))}
+                      className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
+                    >
+                      <option value="Social Media">Social Media (X / LinkedIn / Instagram)</option>
+                      <option value="Friend / Referral">Friend or Colleague Referral</option>
+                      <option value="Tech Community">Tech Community / Developer Forum</option>
+                      <option value="Search Engine">Search Engine (Google / Bing)</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* WHY JOIN BETA (MAX 300 CHARS) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-black uppercase text-swaply-black">
+                        Why do you want to join the beta? <span className="text-swaply-black/50">(Optional)</span>
+                      </label>
+                      <span className={`text-[11px] font-black ${formData.betaReason.length > 280 ? 'text-rose-700' : 'text-swaply-black/60'}`}>
+                        {formData.betaReason.length} / 300
+                      </span>
+                    </div>
+                    <textarea
+                      rows={3}
+                      maxLength={300}
+                      placeholder="Tell us what skills you want to learn or exchange during 1-on-1 video calls..."
+                      value={formData.betaReason}
+                      onChange={(e) => setFormData(prev => ({ ...prev, betaReason: e.target.value }))}
+                      className="w-full bg-white border-2 border-swaply-black rounded-2xl p-4 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. AGREEMENTS CHECKBOXES */}
+                <div className="space-y-3 pt-3 border-t-2 border-dashed border-swaply-black/20">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={formData.agreeTerms}
+                      onChange={(e) => setFormData(prev => ({ ...prev, agreeTerms: e.target.checked }))}
+                      className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
+                    />
+                    <span>I agree to the Terms & Conditions <span className="text-swaply-coral">*</span></span>
                   </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Briefly describe your skill background or what you hope to gain from 1-on-1 video calls..."
-                    value={formData.experience}
-                    onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
-                    className="w-full bg-white border-2 border-swaply-black rounded-2xl p-4 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
-                  />
+
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={formData.agreePrivacy}
+                      onChange={(e) => setFormData(prev => ({ ...prev, agreePrivacy: e.target.checked }))}
+                      className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
+                    />
+                    <span>I agree to the Privacy Policy <span className="text-swaply-coral">*</span></span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black/80 select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.agreeUpdates}
+                      onChange={(e) => setFormData(prev => ({ ...prev, agreeUpdates: e.target.checked }))}
+                      className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
+                    />
+                    <span>I agree to receive beta updates via email (Optional)</span>
+                  </label>
                 </div>
 
                 {/* SUBMIT BUTTON */}
                 <button
                   type="submit"
-                  disabled={loading || status.registrationClosed}
+                  disabled={loading || status.registrationClosed || usernameStatus.available === false}
                   className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-4 rounded-2xl text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {loading ? (
@@ -504,7 +729,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                   onClick={() => setStep('form')}
                   className="text-swaply-black/70 hover:text-swaply-black"
                 >
-                  Change Email
+                  Edit Details
                 </button>
               </div>
             </div>
@@ -538,17 +763,25 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
               <div className="space-y-3 pt-2">
                 <div>
                   <span className="text-[10px] font-black uppercase text-swaply-black/60 block">PIONEER MEMBER</span>
-                  <h3 className="text-xl font-black text-swaply-black">{registeredUser.name}</h3>
+                  <h3 className="text-xl font-black text-swaply-black">
+                    {registeredUser.name} <span className="text-xs font-bold text-swaply-coral">(@{registeredUser.username || registeredUser.name.toLowerCase().replace(/\s+/g, '')})</span>
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-swaply-black/60 block">OCCUPATION</span>
+                    <p className="font-bold text-swaply-black">{registeredUser.occupation || 'Member'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-swaply-black/60 block">COUNTRY</span>
+                    <p className="font-bold text-swaply-black">{registeredUser.country || 'Global'}</p>
+                  </div>
                 </div>
 
                 <div>
                   <span className="text-[10px] font-black uppercase text-swaply-black/60 block">REGISTERED EMAIL</span>
                   <p className="text-sm font-bold text-swaply-black truncate">{registeredUser.email}</p>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-black uppercase text-swaply-black/60 block">SKILL FOCUS</span>
-                  <p className="text-xs font-bold text-swaply-coral">{registeredUser.skillsToTest || 'Web Dev & Coding Swaps'}</p>
                 </div>
               </div>
 
@@ -557,7 +790,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                 <div>
                   <h4 className="text-xs font-black text-emerald-900">Registration Completed!</h4>
                   <p className="text-[11px] font-bold text-emerald-800">
-                    A confirmation welcome mail has been sent to <strong>{registeredUser.email}</strong>.
+                    Welcome email sent to <strong>{registeredUser.email}</strong>.
                   </p>
                 </div>
               </div>

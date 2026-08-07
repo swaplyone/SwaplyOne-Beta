@@ -171,17 +171,60 @@ router.post('/otp/verify', async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// 3.5 GET /api/username/check - Check Username Availability
+// -------------------------------------------------------------
+router.get('/username/check', async (req, res) => {
+  try {
+    const rawUsername = (req.query.username || '').trim();
+    const cleanUsername = rawUsername.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+    if (!cleanUsername || cleanUsername.length < 3) {
+      return res.json({ available: false, message: 'Username must be at least 3 alphanumeric characters.' });
+    }
+
+    const users = await getUsers();
+    const isTaken = users.some(u => (u.username || '').toLowerCase() === cleanUsername);
+
+    if (isTaken) {
+      return res.json({ available: false, message: 'Username is already taken.' });
+    }
+
+    return res.json({ available: true, message: 'Username is available!', username: cleanUsername });
+  } catch (error) {
+    return res.status(500).json({ available: false, message: error.message });
+  }
+});
+
+// -------------------------------------------------------------
 // 4. POST /api/beta/register - Register new Beta User
 // -------------------------------------------------------------
 router.post('/beta/register', async (req, res) => {
   try {
-    const { name, email, track, skillsToTest, experience } = req.body;
+    const {
+      firstName,
+      lastName,
+      username,
+      name,
+      email,
+      occupation,
+      country,
+      referralSource,
+      betaReason,
+      track,
+      skillsToTest,
+      experience
+    } = req.body;
 
-    if (!name || !email) {
-      return res.status(400).json({ success: false, message: 'Name and email are required.' });
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanFirstName = (firstName || name || cleanEmail.split('@')[0]).trim();
+    const cleanLastName = (lastName || '').trim();
+    const fullName = cleanLastName ? `${cleanFirstName} ${cleanLastName}` : cleanFirstName;
+    const cleanUsername = (username || cleanFirstName.toLowerCase().replace(/[^a-z0-9_]/g, '')).trim();
+
+    if (!cleanEmail) {
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
     const settings = await getSettings();
     const users = await getUsers();
 
@@ -195,7 +238,7 @@ router.post('/beta/register', async (req, res) => {
 
     const existingUser = users.find(u => u.email === cleanEmail);
     if (existingUser) {
-      return res.status(400).json({ success: false, message: 'This email is already registered on Swaply Beta. Only 1 registration per member is permitted to eliminate fake users and protect platform policy.' });
+      return res.status(400).json({ success: false, message: 'This email is already registered on Swaply Beta. Only 1 registration per member is permitted.' });
     }
 
     // Generate Beta ID format (e.g. SWAP-BETA-1003)
@@ -205,10 +248,17 @@ router.post('/beta/register', async (req, res) => {
     const newUser = {
       id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       betaId,
-      name: name.trim(),
+      name: fullName,
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
+      username: cleanUsername,
       email: cleanEmail,
-      track: track || 'tester',
-      skillsToTest: skillsToTest || 'General Testing',
+      occupation: occupation || 'Other',
+      country: country || 'Not Specified',
+      referralSource: referralSource || 'Direct',
+      betaReason: (betaReason || '').substring(0, 300),
+      track: track || 'pioneer',
+      skillsToTest: skillsToTest || 'General Skill Swapping',
       experience: experience || '',
       createdAt: new Date().toISOString()
     };
