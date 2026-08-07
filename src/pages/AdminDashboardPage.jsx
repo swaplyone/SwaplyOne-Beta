@@ -182,7 +182,7 @@ export default function AdminDashboardPage({ onBackToHome }) {
 
             <button
               type="submit"
-              className="w-full neo-btn bg-swaply-coral text-white border-3 border-swaply-black py-3.5 rounded-xl text-base font-black shadow-hard"
+              className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-3.5 rounded-2xl text-base font-black shadow-hard cursor-pointer transition-all active:translate-y-0.5"
             >
               Unlock Control Center →
             </button>
@@ -191,9 +191,9 @@ export default function AdminDashboardPage({ onBackToHome }) {
           <div className="mt-6 pt-4 border-t-2 border-swaply-black/15">
             <button
               onClick={onBackToHome}
-              className="text-xs font-bold text-swaply-black/70 hover:underline flex items-center justify-center gap-1 mx-auto"
+              className="text-xs font-black text-swaply-black/70 hover:text-swaply-coral flex items-center justify-center gap-1 mx-auto transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Return to Swaply Homepage
+              <ArrowLeft className="w-3.5 h-3.5" /> Return to SwaplyOne Homepage
             </button>
           </div>
         </motion.div>
@@ -207,31 +207,31 @@ export default function AdminDashboardPage({ onBackToHome }) {
       {/* TOP ADMIN HEADER */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <div className="inline-flex items-center gap-2 bg-swaply-black text-white px-3 py-1 rounded-full text-xs font-black mb-2">
+          <div className="inline-flex items-center gap-2 bg-swaply-black text-white border-2 border-swaply-black px-3 py-1 rounded-full text-xs font-black mb-2 shadow-hard-sm">
             <ShieldCheck className="w-4 h-4 text-swaply-yellow" />
-            <span>SWAPLY ADMIN CONTROL CENTER</span>
+            <span>SWAPLYONE ADMIN CONTROL CENTER</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-swaply-black">
             Beta Registration Dashboard
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={fetchDashboardData}
-            className="neo-btn bg-paper-card text-swaply-black px-3.5 py-2 rounded-xl text-xs font-bold shadow-hard-sm flex items-center gap-1.5"
+            className="neo-btn bg-paper-card hover:bg-paper-dark text-swaply-black border-2 border-swaply-black px-3.5 py-2 rounded-xl text-xs font-black shadow-hard-sm flex items-center gap-1.5 cursor-pointer transition-all active:translate-y-0.5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
           <button
             onClick={handleExportCsv}
-            className="neo-btn bg-swaply-mint text-swaply-black px-3.5 py-2 rounded-xl text-xs font-black shadow-hard-sm flex items-center gap-1.5"
+            className="neo-btn bg-swaply-mint hover:bg-emerald-300 text-swaply-black border-2 border-swaply-black px-3.5 py-2 rounded-xl text-xs font-black shadow-hard-sm flex items-center gap-1.5 cursor-pointer transition-all active:translate-y-0.5"
           >
             <Download className="w-3.5 h-3.5" /> Export CSV
           </button>
           <button
             onClick={() => setAuthenticated(false)}
-            className="neo-btn bg-swaply-coral text-white px-3 py-2 rounded-xl text-xs font-bold shadow-hard-sm"
+            className="neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black px-3.5 py-2 rounded-xl text-xs font-black shadow-hard-sm cursor-pointer transition-all active:translate-y-0.5"
           >
             Lock Dashboard
           </button>
