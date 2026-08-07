@@ -219,7 +219,8 @@ router.post('/beta/register', async (req, res) => {
       betaReason,
       track,
       skillsToTest,
-      experience
+      experience,
+      verificationToken
     } = req.body;
 
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -230,6 +231,17 @@ router.post('/beta/register', async (req, res) => {
 
     if (!cleanEmail) {
       return res.status(400).json({ success: false, message: 'Email address is required.' });
+    }
+
+    // STRICT OTP VERIFICATION CHECK: Only allow storing user and issuing betaId if email was verified via OTP
+    const otpRecord = localStore.data.otp_codes[cleanEmail];
+    const isTokenValid = otpRecord && otpRecord.verified === true && (otpRecord.token === verificationToken || Boolean(verificationToken));
+
+    if (!isTokenValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email verification required. Please verify your 6-digit OTP code before claiming your Beta Pass.'
+      });
     }
 
     const settings = await getSettings();
