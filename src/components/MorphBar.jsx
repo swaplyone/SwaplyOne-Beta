@@ -88,43 +88,56 @@ export default function MorphBar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [mode]);
 
+  // Dynamic Session State Sync with Live Database Verification
   useEffect(() => {
     const syncUserSession = () => {
       try {
         const savedReg = localStorage.getItem('swaply_registered_user');
         const savedSession = localStorage.getItem('swaply_user_session');
 
+        let emailToCheck = null;
         if (savedReg) {
           const parsed = JSON.parse(savedReg);
-          if (parsed && parsed.email) {
-            setActiveUser(parsed.email);
-            setUserMeta({
-              email: parsed.email,
-              name: parsed.name,
-              beta_id: parsed.betaId,
-              is_admin: parsed.email === 'founder@swaplyone.in'
-            });
-            return;
-          }
-        }
-
-        if (savedSession) {
+          if (parsed && parsed.email) emailToCheck = parsed.email;
+        } else if (savedSession) {
           const parsed = JSON.parse(savedSession);
-          if (parsed && parsed.email) {
-            setActiveUser(parsed.email);
-            setUserMeta({
-              email: parsed.email,
-              name: parsed.name,
-              beta_id: 'Session Active',
-              is_admin: parsed.email === 'founder@swaplyone.in'
-            });
-            return;
-          }
+          if (parsed && parsed.email) emailToCheck = parsed.email;
         }
 
-        if (currentUser) {
-          setActiveUser(currentUser);
-          setUserMeta(userDetails);
+        if (emailToCheck) {
+          // Verify with database if user registration is still active (or if details updated)
+          fetch(`/api/beta/verify-user?email=${encodeURIComponent(emailToCheck)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.registered && data.user) {
+                // Admin updated details -> sync updated pass!
+                localStorage.setItem('swaply_registered_user', JSON.stringify(data.user));
+                setActiveUser(data.user.email);
+                setUserMeta({
+                  email: data.user.email,
+                  name: data.user.name,
+                  beta_id: data.user.betaId,
+                  is_admin: data.user.email === 'founder@swaplyone.in'
+                });
+              } else {
+                // Admin deleted user registration -> revoke local stored pass!
+                localStorage.removeItem('swaply_registered_user');
+                if (savedSession) {
+                  const parsed = JSON.parse(savedSession);
+                  setActiveUser(parsed.email);
+                  setUserMeta({
+                    email: parsed.email,
+                    name: parsed.name,
+                    beta_id: 'Session Active',
+                    is_admin: parsed.email === 'founder@swaplyone.in'
+                  });
+                } else {
+                  setActiveUser(null);
+                  setUserMeta(null);
+                }
+              }
+            })
+            .catch(() => {});
         } else {
           setActiveUser(null);
           setUserMeta(null);
