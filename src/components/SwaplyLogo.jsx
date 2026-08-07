@@ -1,24 +1,33 @@
 import React from 'react';
 
-export default function SwaplyLogo({ size = 22, color = "#D85B3E" }) {
+export default function SwaplyLogo({ size = 26, color = "#D85B3E" }) {
   return (
     <div
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        borderRadius: '6px',
+        borderRadius: '50%',
         background: color,
-        border: '1.5px solid #1B2233',
+        border: '2px solid #1B2233',
+        padding: '2px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontWeight: 900,
-        fontSize: `${size * 0.5}px`,
-        color: '#FFF',
-        boxShadow: '1.5px 1.5px 0px #1B2233 flex-shrink-0'
+        boxShadow: '1.5px 1.5px 0px #1B2233',
+        flexShrink: 0,
+        overflow: 'hidden'
       }}
     >
-      S
+      <img
+        src="/swaply-favicon-bgl.png"
+        alt="Swaply Logo"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          borderRadius: '50%'
+        }}
+      />
     </div>
   );
 }
