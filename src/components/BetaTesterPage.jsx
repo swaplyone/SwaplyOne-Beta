@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText, ChevronRight, Zap } from 'lucide-react';
+import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText, ChevronRight } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { OtpInput } from './OtpInput';
 
@@ -372,16 +372,14 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     }
   };
 
-  const claimedPercentage = Math.round(((status.maxLimit - status.remainingSlots) / status.maxLimit) * 100);
-
   return (
-    <div className="min-h-screen bg-paper pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto relative overflow-hidden">
+    <div className="min-h-screen bg-paper pt-20 sm:pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto relative overflow-hidden">
       
       {/* AMBIENT BACKGROUND GLOW */}
       <div className="absolute top-10 right-1/2 translate-x-1/2 w-96 h-96 bg-swaply-yellow/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      {/* INNOVATIVE HEADER SECTION */}
-      <div className="text-center mb-8 space-y-4">
+      {/* ULTRA-CLEAN MOBILE-OPTIMIZED HEADER SECTION */}
+      <div className="text-center mb-6 space-y-2">
         <button
           onClick={onBackToHome}
           className="inline-flex items-center gap-1.5 text-xs font-black text-swaply-black/70 hover:text-swaply-coral mb-1 transition-colors cursor-pointer"
@@ -389,43 +387,17 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
           <ArrowLeft className="w-4 h-4" /> Return to Homepage
         </button>
 
-        {/* GLOWING DYNAMIC BADGE */}
-        <div className="inline-flex items-center gap-2.5 bg-paper-cream border-2 border-swaply-black px-4 py-1.5 rounded-full text-xs font-black shadow-hard-sm mx-auto">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-          <span className="uppercase tracking-wider">LIVE PIONEER ACCESS • 1-ON-1 VIDEO BETA</span>
-          <Zap className="w-3.5 h-3.5 text-swaply-coral fill-swaply-coral" />
-        </div>
-
-        <h1 className="text-3xl sm:text-5xl font-black text-swaply-black tracking-tight leading-[1.1]">
-          Claim Your Pioneer Beta Pass
+        <h1 className="text-3xl sm:text-5xl font-black text-swaply-black tracking-tight leading-tight">
+          Claim Your Beta Pass
         </h1>
-        <p className="text-sm sm:text-base font-bold text-swaply-black/75 max-w-lg mx-auto leading-relaxed">
-          Join the early circle of pioneers shaping the next generation of 1-on-1 real-time video skill exchange.
+        <p className="text-xs sm:text-sm font-bold text-swaply-black/75 max-w-sm mx-auto">
+          Complete your profile to receive your 1-on-1 video Beta Pass.
         </p>
-
-        {/* INNOVATIVE SLOT PROGRESS BAR */}
-        <div className="max-w-md mx-auto bg-white border-2 border-swaply-black rounded-2xl p-3 shadow-hard-sm space-y-2 text-left">
-          <div className="flex items-center justify-between text-xs font-black text-swaply-black">
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-swaply-coral" /> Beta Pioneer Slots
-            </span>
-            <span className="text-emerald-700 font-extrabold">
-              {status.remainingSlots} Slots Available ({status.currentCount}/{status.maxLimit} Claimed)
-            </span>
-          </div>
-
-          <div className="w-full bg-slate-100 border border-swaply-black rounded-full h-3.5 overflow-hidden p-0.5">
-            <div
-              className="bg-swaply-coral h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.max(5, claimedPercentage)}%` }}
-            />
-          </div>
-        </div>
       </div>
 
       <AnimatePresence mode="wait">
         
-        {/* ==================== STEP 1: INNOVATIVE MULTI-SECTION FORM ==================== */}
+        {/* ==================== STEP 1: MULTI-SECTION FORM ==================== */}
         {step === 'form' && (
           <motion.div
             key="form"
@@ -434,10 +406,10 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
             exit={{ opacity: 0, y: -15 }}
             className="max-w-2xl mx-auto"
           >
-            <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative">
+            <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-5 sm:p-8 shadow-hard relative">
               
-              {/* INNOVATIVE SECTION SWITCHER TABS */}
-              <div className="flex rounded-2xl bg-paper-card border-2 border-swaply-black p-1.5 shadow-hard-sm mb-6">
+              {/* SECTION SWITCHER TABS */}
+              <div className="flex rounded-2xl bg-paper-card border-2 border-swaply-black p-1 shadow-hard-sm mb-5">
                 <button
                   type="button"
                   onClick={() => setActiveSection(1)}
@@ -459,23 +431,23 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                       : 'text-swaply-black/70 hover:text-swaply-black'
                   }`}
                 >
-                  <Briefcase className="w-3.5 h-3.5" /> 2. About & Agreements
+                  <Briefcase className="w-3.5 h-3.5" /> 2. About & Submit
                 </button>
               </div>
 
-              <form onSubmit={handleFormSubmit} className="space-y-6">
+              <form onSubmit={handleFormSubmit} className="space-y-5">
                 
                 {/* SECTION 1: BASIC INFORMATION */}
                 {activeSection === 1 && (
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="space-y-5"
+                    className="space-y-4"
                   >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       {/* FIRST NAME */}
                       <div>
-                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1">
                           First Name <span className="text-swaply-coral">*</span>
                         </label>
                         <input
@@ -490,7 +462,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
                       {/* LAST NAME */}
                       <div>
-                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1">
                           Last Name <span className="text-swaply-coral">*</span>
                         </label>
                         <input
@@ -506,7 +478,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
                     {/* USERNAME WITH LIVE AVAILABILITY CHECK */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
                           <AtSign className="w-3.5 h-3.5 text-swaply-coral" /> Username <span className="text-swaply-coral">*</span>
                         </label>
@@ -532,12 +504,11 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                           className="w-full bg-white border-2 border-swaply-black rounded-2xl pl-8 pr-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
                         />
                       </div>
-                      <p className="text-[11px] font-semibold text-swaply-black/60 mt-1">Unique handle for peer matching and video calls.</p>
                     </div>
 
                     {/* EMAIL ADDRESS */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
                           <Mail className="w-3.5 h-3.5 text-swaply-coral" /> Email Address <span className="text-swaply-coral">*</span>
                         </label>
@@ -576,7 +547,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                         }}
                         className="w-full neo-btn bg-swaply-yellow text-swaply-black border-2 border-swaply-black py-3.5 rounded-2xl text-xs font-black shadow-hard flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <span>Continue to About You & Agreements →</span>
+                        <span>Continue to About You & Submit →</span>
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -588,12 +559,12 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                   <motion.div
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="space-y-5"
+                    className="space-y-4"
                   >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       {/* OCCUPATION */}
                       <div>
-                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1">
                           Occupation <span className="text-swaply-coral">*</span>
                         </label>
                         <select
@@ -612,7 +583,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
                       {/* COUNTRY */}
                       <div>
-                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5 flex items-center gap-1">
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1 flex items-center gap-1">
                           <Globe className="w-3.5 h-3.5 text-swaply-coral" /> Country <span className="text-swaply-coral">*</span>
                         </label>
                         <select
@@ -634,7 +605,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
                     {/* HOW DID YOU HEAR ABOUT SWAPLYONE */}
                     <div>
-                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                      <label className="block text-xs font-black uppercase text-swaply-black mb-1">
                         How did you hear about SwaplyOne?
                       </label>
                       <select
@@ -652,7 +623,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
                     {/* WHY JOIN BETA (MAX 300 CHARS) */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-black uppercase text-swaply-black">
                           Why do you want to join the beta? <span className="text-swaply-black/50">(Optional)</span>
                         </label>
@@ -666,12 +637,12 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                         placeholder="Tell us what skills you want to learn or exchange during 1-on-1 video calls..."
                         value={formData.betaReason}
                         onChange={(e) => setFormData(prev => ({ ...prev, betaReason: e.target.value }))}
-                        className="w-full bg-white border-2 border-swaply-black rounded-2xl p-4 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl p-3.5 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
                       />
                     </div>
 
                     {/* AGREEMENTS CHECKBOXES */}
-                    <div className="space-y-3 pt-3 border-t-2 border-dashed border-swaply-black/20">
+                    <div className="space-y-2.5 pt-2 border-t-2 border-dashed border-swaply-black/20">
                       <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
                         <input
                           type="checkbox"
@@ -710,7 +681,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                       <button
                         type="button"
                         onClick={() => setActiveSection(1)}
-                        className="w-1/3 neo-btn bg-paper-card text-swaply-black border-2 border-swaply-black py-4 rounded-2xl text-xs font-black shadow-hard cursor-pointer"
+                        className="w-1/3 neo-btn bg-paper-card text-swaply-black border-2 border-swaply-black py-3.5 rounded-2xl text-xs font-black shadow-hard cursor-pointer"
                       >
                         ← Back
                       </button>
@@ -718,7 +689,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                       <button
                         type="submit"
                         disabled={loading || status.registrationClosed || usernameStatus.available === false}
-                        className="w-2/3 neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-4 rounded-2xl text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                        className="w-2/3 neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-3.5 rounded-2xl text-xs sm:text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                       >
                         {loading ? (
                           <span>Sending OTP Code...</span>
