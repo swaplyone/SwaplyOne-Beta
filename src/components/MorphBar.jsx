@@ -141,14 +141,19 @@ export default function MorphBar({
   useEffect(() => {
     if (incomingCall) {
       setMode('incoming_call');
+      setIsVisible(true);
     } else if (activeCallSession) {
       setMode('active_call');
+      setIsVisible(true);
     } else if (securityAlertNotice) {
       setMode('security_alert');
+      setIsVisible(true);
     } else if (friendRequestNotice) {
       setMode('friend_request');
+      setIsVisible(true);
     } else if (notificationNotice) {
       setMode('notification');
+      setIsVisible(true);
     }
   }, [incomingCall, activeCallSession, securityAlertNotice, friendRequestNotice, notificationNotice]);
 
