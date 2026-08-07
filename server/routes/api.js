@@ -1,8 +1,15 @@
 import express from 'express';
+import crypto from 'crypto';
 import { db, isFirebaseConnected, localStore } from '../config/firebase.js';
 import { sendOtpEmail, sendRegistrationSuccessEmail, sendWelcomeEmail } from '../services/emailService.js';
 
 const router = express.Router();
+
+// Helper: Hash Password using native crypto
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return { hash, salt };
+}
 
 // Helper: Get settings from Firestore or LocalStore
 async function getSettings() {
@@ -293,6 +300,137 @@ router.post('/beta/register', async (req, res) => {
       success: true,
       message: 'Welcome to Swaply Beta!',
       user: newUser
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 4.5 POST /api/auth/register - Register Account with Password
+// -------------------------------------------------------------
+router.post('/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanName = (name || '').trim();
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Valid email address is required.' });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    const users = await getUsers();
+    const existingUser = users.find(u => u.email === cleanEmail);
+
+    if (existingUser && existingUser.passwordHash) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists. Please sign in.' });
+    }
+
+    const { hash, salt } = hashPassword(password);
+    const userId = existingUser ? existingUser.id : `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    const userData = {
+      id: userId,
+      name: cleanName || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      passwordHash: hash,
+      salt: salt,
+      createdAt: existingUser?.createdAt || new Date().toISOString()
+    };
+
+    if (isFirebaseConnected && db) {
+      await db.collection('users').doc(userId).set(userData, { merge: true });
+    } else {
+      const idx = localStore.data.users.findIndex(u => u.email === cleanEmail);
+      if (idx >= 0) {
+        localStore.data.users[idx] = { ...localStore.data.users[idx], ...userData };
+      } else {
+        localStore.data.users.unshift(userData);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Account registered successfully!',
+      user: {
+        id: userId,
+        name: userData.name,
+        email: userData.email,
+        isAdmin: cleanEmail === 'founder@swaplyone.in'
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 4.6 POST /api/auth/login - Sign In with Password Verification
+// -------------------------------------------------------------
+router.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Valid email address is required.' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required to sign in.' });
+    }
+
+    // Founder Master Override
+    const isFounder = cleanEmail === 'founder@swaplyone.in';
+    if (isFounder && password === 'lichisw@26') {
+      return res.json({
+        success: true,
+        message: 'Welcome back, Founder!',
+        user: {
+          id: 'usr_founder',
+          name: 'Swaply Founder',
+          email: cleanEmail,
+          isAdmin: true
+        }
+      });
+    }
+
+    const users = await getUsers();
+    const user = users.find(u => u.email === cleanEmail);
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'No account found with this email address. Please register an account first.'
+      });
+    }
+
+    if (user.passwordHash && user.salt) {
+      const { hash } = hashPassword(password, user.salt);
+      if (hash !== user.passwordHash) {
+        return res.status(400).json({
+          success: false,
+          message: 'Incorrect password. Please check your password and try again.'
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Sign in successful!',
+      user: {
+        id: user.id,
+        name: user.name || cleanEmail.split('@')[0],
+        email: user.email,
+        betaId: user.betaId || undefined,
+        isAdmin: cleanEmail === 'founder@swaplyone.in'
+      }
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
