@@ -91,24 +91,24 @@ export default function HeroSection({ onOpenJoinModal }) {
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.7, delay: 0.3 }}
-        className="mt-10 bg-white/95 backdrop-blur-md border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(27,36,42,0.1)] max-w-2xl mx-auto relative overflow-hidden space-y-6 text-left"
+        className="mt-10 bg-white/95 backdrop-blur-md border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(27,36,42,0.1)] max-w-2xl mx-auto relative overflow-hidden space-y-5 text-left"
       >
         {/* TOP STATUS BAR */}
-        <div className="flex items-center justify-between text-xs font-black text-swaply-black pb-3 border-b-2 border-dashed border-swaply-black/20">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-black text-swaply-black pb-3 border-b-2 border-dashed border-swaply-black/20">
           <span className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             LIVE P2P VIDEO MATCH ENGINE
           </span>
-          <span className="bg-swaply-yellow border border-swaply-black px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase">
+          <span className="bg-swaply-yellow border border-swaply-black px-2.5 py-1 rounded-full text-[10px] font-black uppercase">
             ⚡ &lt;35ms LATENCY
           </span>
         </div>
 
         {/* LIVE PEER MATCH DEMO */}
         <div className="bg-paper-cream border-2 border-swaply-black rounded-2xl p-4 sm:p-5 shadow-hard-sm space-y-4">
-          <div className="flex items-center justify-between text-xs font-black text-swaply-black/70">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-xs font-black text-swaply-black/70">
             <span>ACTIVE 1-ON-1 SKILL EXCHANGE</span>
-            <span className="text-emerald-700 flex items-center gap-1 font-extrabold">
+            <span className="text-emerald-700 flex items-center gap-1 font-extrabold text-xs">
               <Video className="w-3.5 h-3.5" /> HD Video Stream Ready
             </span>
           </div>
@@ -116,57 +116,57 @@ export default function HeroSection({ onOpenJoinModal }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* PEER 1 */}
             <div className="bg-white border-2 border-swaply-black p-3.5 rounded-xl flex items-center gap-3 shadow-hard-sm">
-              <div className="w-10 h-10 rounded-full bg-swaply-coral text-white font-black flex items-center justify-center text-sm border border-swaply-black">
+              <div className="w-10 h-10 rounded-full bg-swaply-coral text-white font-black flex items-center justify-center text-sm border border-swaply-black flex-shrink-0">
                 AV
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-xs font-black text-swaply-black block truncate">Alex Vance</span>
-                <span className="text-[10px] font-bold text-swaply-black/60 block">Offers: React & WebSockets</span>
+                <span className="text-[10px] font-bold text-swaply-black/60 block truncate">Offers: React & WebSockets</span>
               </div>
             </div>
 
             {/* PEER 2 */}
             <div className="bg-white border-2 border-swaply-black p-3.5 rounded-xl flex items-center gap-3 shadow-hard-sm">
-              <div className="w-10 h-10 rounded-full bg-swaply-mint text-swaply-black font-black flex items-center justify-center text-sm border border-swaply-black">
+              <div className="w-10 h-10 rounded-full bg-swaply-mint text-swaply-black font-black flex items-center justify-center text-sm border border-swaply-black flex-shrink-0">
                 ER
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-xs font-black text-swaply-black block truncate">Elena Rostova</span>
-                <span className="text-[10px] font-bold text-swaply-black/60 block">Offers: UI/UX & Design</span>
+                <span className="text-[10px] font-bold text-swaply-black/60 block truncate">Offers: UI/UX & Design</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* ENGINE HIGHLIGHTS BADGES */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-black text-swaply-black/80 pt-1">
-          <span className="flex items-center gap-1">
-            <Zap className="w-3.5 h-3.5 text-swaply-coral" /> Encrypted WebRTC P2P
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-black text-swaply-black/80 bg-paper-card border border-swaply-black/15 p-3 rounded-xl">
+          <span className="flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-swaply-coral flex-shrink-0" /> Encrypted WebRTC
           </span>
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Zero Software Install
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> Zero Software Install
           </span>
-          <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-swaply-yellow" /> Instant Skill Matcher
+          <span className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-swaply-coral flex-shrink-0" /> Instant Matcher
           </span>
         </div>
 
-        {/* ACTION BUTTONS */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+        {/* ACTION BUTTONS GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 w-full">
           <button
             onClick={() => navigate('/login')}
-            className="w-full sm:w-auto neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black px-6 py-3.5 rounded-2xl text-xs font-black shadow-hard transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black h-12 rounded-xl text-xs sm:text-sm font-black shadow-hard flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Sign In to Start Session →</span>
+            <span>Sign In to Start Session</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
           <button
             onClick={() => navigate('/beta')}
-            className="w-full sm:w-auto neo-btn bg-swaply-yellow hover:bg-swaply-craft text-swaply-black border-2 border-swaply-black px-6 py-3.5 rounded-2xl text-xs font-black shadow-hard transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full neo-btn bg-swaply-yellow hover:bg-swaply-craft text-swaply-black border-2 border-swaply-black h-12 rounded-xl text-xs sm:text-sm font-black shadow-hard flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-swaply-coral" />
-            <span>Apply for Beta Pioneer Pass</span>
+            <span>Apply for Beta Access Pass</span>
           </button>
         </div>
       </motion.div>
