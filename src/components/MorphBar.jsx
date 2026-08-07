@@ -296,7 +296,7 @@ export default function MorphBar({
               >
                 <SwaplyLogo size={26} color="#FFFFFF" />
                 <span style={{ fontWeight: 800, fontSize: '0.95rem', fontFamily: 'var(--font-display)', letterSpacing: '0.5px' }}>
-                  Swaply
+                  SwaplyOne
                 </span>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: activeUser ? '#6D7B55' : '#D85B3E', boxShadow: activeUser ? '0 0 6px #6D7B55' : '0 0 6px #D85B3E' }} />
               </div>

@@ -171,7 +171,7 @@ export default function LoginPage() {
     showMorphBar({
       type: 'info',
       title: 'Signed Out',
-      message: 'You have been disconnected from your Swaply session.'
+      message: 'You have been disconnected from your SwaplyOne session.'
     });
   };
 
@@ -192,11 +192,11 @@ export default function LoginPage() {
       <div className="text-center mb-6 relative">
         <div className="inline-flex items-center gap-2 bg-swaply-yellow text-swaply-black border-2 border-swaply-black px-4 py-1 rounded-full shadow-hard-sm text-xs font-black mb-2">
           <Sparkles className="w-3.5 h-3.5 text-swaply-coral fill-swaply-coral" />
-          <span>SWAPLY AUTHENTICATION</span>
+          <span>SWAPLYONE AUTHENTICATION</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-black text-swaply-black tracking-tight">
-          {activeTab === 'login' ? 'Sign In to Swaply' : 'Create Your Account'}
+          {activeTab === 'login' ? 'Sign In to SwaplyOne' : 'Create Your Account'}
         </h1>
 
         <p className="mt-2 text-xs sm:text-sm font-bold text-swaply-black/75 max-w-xs mx-auto">
