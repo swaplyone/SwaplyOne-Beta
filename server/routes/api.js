@@ -64,6 +64,29 @@ router.get('/beta/status', async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// 1.5 GET /api/beta/verify-user - Verify if registered user exists in DB
+// -------------------------------------------------------------
+router.get('/beta/verify-user', async (req, res) => {
+  try {
+    const cleanEmail = (req.query.email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      return res.json({ registered: false });
+    }
+
+    const users = await getUsers();
+    const user = users.find(u => u.email === cleanEmail && u.betaId);
+
+    if (user) {
+      return res.json({ registered: true, user });
+    }
+
+    return res.json({ registered: false });
+  } catch (error) {
+    return res.json({ registered: false });
+  }
+});
+
+// -------------------------------------------------------------
 // 2. POST /api/otp/send - Generate & send OTP
 // -------------------------------------------------------------
 router.post('/otp/send', async (req, res) => {

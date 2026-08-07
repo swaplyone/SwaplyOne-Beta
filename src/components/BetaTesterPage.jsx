@@ -48,26 +48,42 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const [otpValue, setOtpValue] = useState('');
   const [registeredUser, setRegisteredUser] = useState(null);
 
-  // Check existing registration or login session in localStorage on mount
+  // Check existing registration or login session in localStorage on mount and verify against database
   useEffect(() => {
     fetchStatus();
 
-    // 1. Check if user already completed registration
     try {
       const savedUser = localStorage.getItem('swaply_registered_user');
+      const savedSession = localStorage.getItem('swaply_user_session');
+
+      let emailToCheck = null;
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
-        if (parsed && parsed.betaId) {
-          setRegisteredUser(parsed);
-          setStep('success');
-          return;
-        }
+        if (parsed && parsed.email) emailToCheck = parsed.email;
+      } else if (savedSession) {
+        const parsed = JSON.parse(savedSession);
+        if (parsed && parsed.email) emailToCheck = parsed.email;
       }
-    } catch (e) {}
 
-    // 2. Check active initial login session
-    try {
-      const savedSession = localStorage.getItem('swaply_user_session');
+      if (emailToCheck) {
+        // Query server database to verify if user registration is still active (not deleted by admin)
+        fetch(`/api/beta/verify-user?email=${encodeURIComponent(emailToCheck)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.registered && data.user) {
+              setRegisteredUser(data.user);
+              localStorage.setItem('swaply_registered_user', JSON.stringify(data.user));
+              setStep('success');
+            } else {
+              // Registration deleted by admin -> Clear local stored pass!
+              localStorage.removeItem('swaply_registered_user');
+              setRegisteredUser(null);
+              setStep('form');
+            }
+          })
+          .catch(() => {});
+      }
+
       if (savedSession) {
         const session = JSON.parse(savedSession);
         if (session && session.email) {
