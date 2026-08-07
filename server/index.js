@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import apiRoutes from './routes/api.js';
 
 dotenv.config();
@@ -26,6 +28,17 @@ app.get('/api/health', healthHandler);
 
 // API Routes
 app.use('/api', apiRoutes);
+
+// Serve Production Frontend Dist Assets (if built)
+const distPath = path.resolve(process.cwd(), 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.resolve(distPath, 'index.html'));
+    }
+  });
+}
 
 // Server Listen
 app.listen(PORT, () => {
