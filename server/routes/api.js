@@ -283,9 +283,17 @@ router.post('/beta/register', async (req, res) => {
       return res.status(400).json({ success: false, message: `Beta Pass (${existingUser.betaId}) already claimed for ${cleanEmail}.` });
     }
 
-    // Generate Beta ID format (e.g. SWAP-BETA-1003)
-    const betaNumber = 1001 + users.length;
-    const betaId = `SWAP-BETA-${betaNumber}`;
+    // Generate Conflict-Free Beta ID format (e.g. SWAP-BETA-1004)
+    const existingNumbers = users
+      .map(u => {
+        const match = (u.betaId || '').match(/SWAP-BETA-(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(num => !isNaN(num) && num > 0);
+
+    const maxBetaNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 1000;
+    const nextBetaNumber = Math.max(1001, maxBetaNumber + 1);
+    const betaId = `SWAP-BETA-${nextBetaNumber}`;
 
     const newUser = {
       id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
