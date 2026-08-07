@@ -726,7 +726,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
               <div className="flex items-center justify-between pb-4 border-b-2 border-dashed border-swaply-black/20">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="font-black text-xs text-swaply-black uppercase tracking-wider">SWAPLY BETA PASS</span>
+                  <span className="font-black text-xs text-swaply-black uppercase tracking-wider">SWAPLYONE BETA PASS</span>
                 </div>
                 <span className="bg-swaply-yellow border border-swaply-black px-3 py-1 rounded-full text-xs font-black">
                   {registeredUser.betaId || 'SWAP-BETA-1001'}

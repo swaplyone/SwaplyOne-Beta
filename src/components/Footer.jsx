@@ -15,7 +15,7 @@ export default function Footer({ onOpenJoinModal }) {
               alt="Swaply Logo"
               className="w-9 h-9 border-2 border-swaply-black rounded-xl shadow-hard-sm rotate-[-3deg] group-hover:rotate-0 transition-transform object-cover"
             />
-            <span className="font-extrabold text-xl tracking-tight text-swaply-black">SWAPLY</span>
+            <span className="font-extrabold text-xl tracking-tight text-swaply-black">SWAPLYONE</span>
           </Link>
           <p className="text-xs font-extrabold text-swaply-black/70 font-handwriting text-lg">
             "Private Beta • 1-on-1 Real-Time Video Engine"
