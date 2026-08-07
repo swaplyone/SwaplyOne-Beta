@@ -284,7 +284,7 @@ export default function MorphBar({
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 title="Tap to open search & menu"
               >
-                <SwaplyLogo size={26} color="#D85B3E" />
+                <SwaplyLogo size={26} color="#FFFFFF" />
                 <span style={{ fontWeight: 800, fontSize: '0.95rem', fontFamily: 'var(--font-display)', letterSpacing: '0.5px' }}>
                   Swaply
                 </span>

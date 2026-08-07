@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function SwaplyLogo({ size = 26, color = "#D85B3E" }) {
+export default function SwaplyLogo({ size = 26, color = "#FFFFFF" }) {
   return (
     <div
       style={{
