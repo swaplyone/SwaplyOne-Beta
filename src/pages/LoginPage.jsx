@@ -59,7 +59,7 @@ export default function LoginPage() {
     showMorphBar({
       type: 'success',
       title: 'Login Successful',
-      message: isAdmin ? 'Welcome back, Founder! Admin privileges active.' : `Logged in as ${cleanEmail}.`,
+      message: isAdmin ? 'Welcome back, Founder! Admin privileges active.' : `Logged in as ${cleanEmail}. Redirecting to Home...`,
       duration: 4000
     });
 
@@ -68,12 +68,12 @@ export default function LoginPage() {
       if (isAdmin) {
         navigate('/admin');
       } else {
-        navigate('/beta');
+        navigate('/'); // Redirect to Home Page on login
       }
     }, 500);
   };
 
-  // DIRECT ACCOUNT REGISTRATION (NO OTP REQUIRED)
+  // DIRECT ACCOUNT REGISTRATION (NO OTP REQUIRED, REDIRECTS TO HOME)
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email) {
@@ -89,89 +89,26 @@ export default function LoginPage() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
+    const userSession = {
+      name: cleanName,
+      email: cleanEmail,
+      loggedInAt: new Date().toISOString()
+    };
+
+    // Save only initial user session (not registered beta pass yet)
+    localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
+
     showMorphBar({
-      type: 'loading',
-      title: 'Creating Account...',
-      message: `Registering new account for ${cleanEmail}`
+      type: 'success',
+      title: '🎉 Account Created Successfully!',
+      message: `Welcome @${cleanName}! Redirecting to Home Page...`,
+      duration: 4000
     });
 
-    try {
-      const res = await fetch('/api/beta/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: cleanName,
-          email: cleanEmail,
-          track: 'pioneer',
-          skillsToTest: 'General Skill Swapping'
-        })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        const userSession = data.user || {
-          name: cleanName,
-          email: cleanEmail,
-          betaId: data.user?.betaId || 'SWAP-BETA-1001',
-          loggedInAt: new Date().toISOString()
-        };
-
-        localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
-        localStorage.setItem('swaply_registered_user', JSON.stringify(userSession));
-
-        showMorphBar({
-          type: 'success',
-          title: '🎉 Account Created Successfully!',
-          message: `Welcome @${cleanName}! Registered email: ${cleanEmail}`,
-          duration: 5000
-        });
-
-        setTimeout(() => {
-          setLoading(false);
-          navigate('/beta');
-        }, 500);
-      } else {
-        // If already registered, still log them in directly
-        const userSession = {
-          name: cleanName,
-          email: cleanEmail,
-          loggedInAt: new Date().toISOString()
-        };
-        localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
-
-        showMorphBar({
-          type: 'info',
-          title: 'Account Already Exists',
-          message: `Logged in as ${cleanEmail}. Redirecting...`,
-          duration: 4000
-        });
-
-        setTimeout(() => {
-          setLoading(false);
-          navigate('/beta');
-        }, 500);
-      }
-    } catch (err) {
-      // Fallback local session registration
-      const userSession = {
-        name: cleanName,
-        email: cleanEmail,
-        loggedInAt: new Date().toISOString()
-      };
-      localStorage.setItem('swaply_user_session', JSON.stringify(userSession));
-
-      showMorphBar({
-        type: 'success',
-        title: 'Account Created',
-        message: `Welcome ${cleanName}! Account active.`,
-        duration: 4000
-      });
-
-      setTimeout(() => {
-        setLoading(false);
-        navigate('/beta');
-      }, 500);
-    }
+    setTimeout(() => {
+      setLoading(false);
+      navigate('/'); // Redirect to Home Page after account creation
+    }, 500);
   };
 
   const handleSignOut = () => {
@@ -219,7 +156,7 @@ export default function LoginPage() {
         <p className="mt-3 text-sm font-bold text-swaply-black/75 max-w-xs mx-auto">
           {activeTab === 'login'
             ? 'Access your account or admin dashboard console.'
-            : 'Create your new member account directly. Zero OTP required.'}
+            : 'Create your new member account directly. Redirects to Home Page.'}
         </p>
       </div>
 
@@ -271,10 +208,10 @@ export default function LoginPage() {
 
             <div className="pt-2 flex flex-col gap-3">
               <button
-                onClick={() => navigate(activeSession.isAdmin ? '/admin' : '/beta')}
+                onClick={() => navigate(activeSession.isAdmin ? '/admin' : '/')}
                 className="w-full neo-btn bg-swaply-coral text-white border-3 border-swaply-black px-6 py-3.5 rounded-xl text-sm font-black shadow-hard flex items-center justify-center gap-2"
               >
-                <span>Continue to {activeSession.isAdmin ? 'Admin Dashboard' : 'Beta Portal'} →</span>
+                <span>Continue to {activeSession.isAdmin ? 'Admin Dashboard' : 'Homepage'} →</span>
               </button>
 
               <button
@@ -361,14 +298,14 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-3 border-swaply-black px-8 py-4 rounded-2xl text-base font-black shadow-hard-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    <span>Sign In to Account →</span>
+                    <span>Sign In & Return to Home →</span>
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
               </form>
             )}
 
-            {/* TAB 2: REGISTER FORM (NO OTP REQUIRED) */}
+            {/* TAB 2: REGISTER FORM (REDIRECTS TO HOME) */}
             {activeTab === 'register' && (
               <form onSubmit={handleRegisterSubmit} className="space-y-5">
                 <div className="border-b-2 border-swaply-black/20 pb-3 flex items-center justify-between">
@@ -410,7 +347,7 @@ export default function LoginPage() {
 
                 <div className="bg-swaply-yellow/20 border-2 border-dashed border-swaply-black/30 p-3 rounded-xl text-xs font-bold text-swaply-black/75 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-swaply-coral flex-shrink-0" />
-                  <span>Direct account registration. Zero OTP verification required.</span>
+                  <span>Creates your account and redirects to Home Page. OTP verification is done when claiming Beta Pass.</span>
                 </div>
 
                 <div className="pt-2">
@@ -419,7 +356,7 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full neo-btn bg-swaply-yellow hover:bg-swaply-craft text-swaply-black border-3 border-swaply-black px-8 py-4 rounded-2xl text-base font-black shadow-hard-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    <span>Create New Account →</span>
+                    <span>Create Account & Go to Home →</span>
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
