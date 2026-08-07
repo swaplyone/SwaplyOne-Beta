@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText } from 'lucide-react';
+import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText, ChevronRight, Zap } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { OtpInput } from './OtpInput';
-import { PaperClip, BinderClip, MaskingTape } from './PaperCraft';
 
 export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const { showMorphBar } = useMorphBar();
   const [step, setStep] = useState('form'); // 'form' | 'otp' | 'success'
+  const [activeSection, setActiveSection] = useState(1); // 1: Basic Info, 2: About & Details
 
   // Structured Beta Registration Form State
   const [formData, setFormData] = useState({
@@ -157,6 +157,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
         title: 'Missing Required Fields',
         message: 'Please fill out First Name, Last Name, Username, and Email.'
       });
+      setActiveSection(1);
       return;
     }
 
@@ -166,6 +167,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
         title: 'Username Taken',
         message: 'Please choose a different unique username.'
       });
+      setActiveSection(1);
       return;
     }
 
@@ -304,7 +306,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       showMorphBar({
         type: 'success',
         title: 'Email Verified Successfully',
-        message: 'Completing registration & issuing Pioneer Pass...'
+        message: 'Completing registration & issuing Beta Pass...'
       });
 
       // 2. Complete Pioneer Pass Registration
@@ -370,45 +372,60 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     }
   };
 
+  const claimedPercentage = Math.round(((status.maxLimit - status.remainingSlots) / status.maxLimit) * 100);
+
   return (
     <div className="min-h-screen bg-paper pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto relative overflow-hidden">
       
-      {/* BACKGROUND ELEMENTS */}
-      <div className="absolute top-10 right-10 w-72 h-72 bg-swaply-yellow/15 rounded-full blur-3xl pointer-events-none -z-10" />
+      {/* AMBIENT BACKGROUND GLOW */}
+      <div className="absolute top-10 right-1/2 translate-x-1/2 w-96 h-96 bg-swaply-yellow/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      {/* HEADER SECTION */}
-      <div className="text-center mb-10 space-y-3">
+      {/* INNOVATIVE HEADER SECTION */}
+      <div className="text-center mb-8 space-y-4">
         <button
           onClick={onBackToHome}
-          className="inline-flex items-center gap-1.5 text-xs font-black text-swaply-black/70 hover:text-swaply-coral mb-2 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-black text-swaply-black/70 hover:text-swaply-coral mb-1 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+          <ArrowLeft className="w-4 h-4" /> Return to Homepage
         </button>
 
-        <div className="inline-flex items-center gap-2 bg-paper-card border border-swaply-black/20 px-3.5 py-1 rounded-full text-xs font-black shadow-sm mx-auto block">
-          <Sparkles className="w-3.5 h-3.5 text-swaply-coral" />
-          <span className="uppercase tracking-wider">SWAPLYONE BETA REGISTRATION</span>
+        {/* GLOWING DYNAMIC BADGE */}
+        <div className="inline-flex items-center gap-2.5 bg-paper-cream border-2 border-swaply-black px-4 py-1.5 rounded-full text-xs font-black shadow-hard-sm mx-auto">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+          <span className="uppercase tracking-wider">LIVE PIONEER ACCESS • 1-ON-1 VIDEO BETA</span>
+          <Zap className="w-3.5 h-3.5 text-swaply-coral fill-swaply-coral" />
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-black text-swaply-black tracking-tight">
+        <h1 className="text-3xl sm:text-5xl font-black text-swaply-black tracking-tight leading-[1.1]">
           Claim Your Pioneer Beta Pass
         </h1>
-        <p className="text-sm sm:text-base font-semibold text-swaply-black/70 max-w-lg mx-auto">
-          Direct 1-on-1 video matching priority, founder channel access, and early-adopter privileges.
+        <p className="text-sm sm:text-base font-bold text-swaply-black/75 max-w-lg mx-auto leading-relaxed">
+          Join the early circle of pioneers shaping the next generation of 1-on-1 real-time video skill exchange.
         </p>
 
-        {/* SYSTEM STATUS BADGE */}
-        <div className="inline-flex items-center gap-3 bg-white border-2 border-swaply-black px-4 py-2 rounded-2xl shadow-hard-sm text-xs font-black mt-2">
-          <span className="flex items-center gap-1.5 text-emerald-700">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            Slots Remaining: <span className="text-swaply-black font-extrabold text-sm">{status.remainingSlots}</span> / {status.maxLimit}
-          </span>
+        {/* INNOVATIVE SLOT PROGRESS BAR */}
+        <div className="max-w-md mx-auto bg-white border-2 border-swaply-black rounded-2xl p-3 shadow-hard-sm space-y-2 text-left">
+          <div className="flex items-center justify-between text-xs font-black text-swaply-black">
+            <span className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-swaply-coral" /> Beta Pioneer Slots
+            </span>
+            <span className="text-emerald-700 font-extrabold">
+              {status.remainingSlots} Slots Available ({status.currentCount}/{status.maxLimit} Claimed)
+            </span>
+          </div>
+
+          <div className="w-full bg-slate-100 border border-swaply-black rounded-full h-3.5 overflow-hidden p-0.5">
+            <div
+              className="bg-swaply-coral h-full rounded-full transition-all duration-500"
+              style={{ width: `${Math.max(5, claimedPercentage)}%` }}
+            />
+          </div>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
         
-        {/* ==================== STEP 1: REGISTRATION FORM ==================== */}
+        {/* ==================== STEP 1: INNOVATIVE MULTI-SECTION FORM ==================== */}
         {step === 'form' && (
           <motion.div
             key="form"
@@ -418,253 +435,303 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
             className="max-w-2xl mx-auto"
           >
             <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative">
-              <PaperClip className="top-3 right-4 rotate-[15deg]" />
-              <MaskingTape text="PIONEER BETA ENTRY" className="-top-3 left-6 -rotate-2" />
+              
+              {/* INNOVATIVE SECTION SWITCHER TABS */}
+              <div className="flex rounded-2xl bg-paper-card border-2 border-swaply-black p-1.5 shadow-hard-sm mb-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveSection(1)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeSection === 1
+                      ? 'bg-swaply-coral text-white border border-swaply-black shadow-hard-sm'
+                      : 'text-swaply-black/70 hover:text-swaply-black'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" /> 1. Basic Info
+                </button>
 
-              <form onSubmit={handleFormSubmit} className="space-y-6 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveSection(2)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeSection === 2
+                      ? 'bg-swaply-yellow text-swaply-black border border-swaply-black shadow-hard-sm'
+                      : 'text-swaply-black/70 hover:text-swaply-black'
+                  }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5" /> 2. About & Agreements
+                </button>
+              </div>
+
+              <form onSubmit={handleFormSubmit} className="space-y-6">
                 
-                {/* 1. BASIC INFORMATION SECTION */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b-2 border-dashed border-swaply-black/20">
-                    <UserCheck className="w-4 h-4 text-swaply-coral" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-swaply-black">Basic Information</h3>
-                  </div>
+                {/* SECTION 1: BASIC INFORMATION */}
+                {activeSection === 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-5"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* FIRST NAME */}
+                      <div>
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                          First Name <span className="text-swaply-coral">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Jordan"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                          className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* FIRST NAME */}
+                      {/* LAST NAME */}
+                      <div>
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                          Last Name <span className="text-swaply-coral">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Smith"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                          className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* USERNAME WITH LIVE AVAILABILITY CHECK */}
                     <div>
-                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
-                        First Name <span className="text-swaply-coral">*</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
+                          <AtSign className="w-3.5 h-3.5 text-swaply-coral" /> Username <span className="text-swaply-coral">*</span>
+                        </label>
+                        {usernameStatus.message && (
+                          <span className={`text-[11px] font-extrabold flex items-center gap-1 ${
+                            usernameStatus.checking ? 'text-amber-700' : usernameStatus.available ? 'text-emerald-700' : 'text-rose-700'
+                          }`}>
+                            {usernameStatus.checking && <RefreshCw className="w-3 h-3 animate-spin" />}
+                            {usernameStatus.available === true && <Check className="w-3 h-3" />}
+                            {usernameStatus.available === false && <ShieldAlert className="w-3 h-3" />}
+                            {usernameStatus.message}
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-swaply-black/50 text-sm">@</span>
+                        <input
+                          type="text"
+                          required
+                          placeholder="jordansmith"
+                          value={formData.username}
+                          onChange={(e) => handleUsernameChange(e.target.value)}
+                          className="w-full bg-white border-2 border-swaply-black rounded-2xl pl-8 pr-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                        />
+                      </div>
+                      <p className="text-[11px] font-semibold text-swaply-black/60 mt-1">Unique handle for peer matching and video calls.</p>
+                    </div>
+
+                    {/* EMAIL ADDRESS */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
+                          <Mail className="w-3.5 h-3.5 text-swaply-coral" /> Email Address <span className="text-swaply-coral">*</span>
+                        </label>
+                        {isEmailLocked && (
+                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> Locked to Session
+                          </span>
+                        )}
+                      </div>
                       <input
-                        type="text"
+                        type="email"
                         required
-                        placeholder="Jordan"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                        readOnly={isEmailLocked}
+                        placeholder="jordan@example.com"
+                        value={formData.email}
+                        onChange={(e) => !isEmailLocked && setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className={`w-full border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold shadow-hard-sm focus:outline-none ${
+                          isEmailLocked ? 'bg-slate-100 text-swaply-black/70 cursor-not-allowed' : 'bg-white text-swaply-black focus:ring-2 focus:ring-swaply-yellow'
+                        }`}
                       />
                     </div>
 
-                    {/* LAST NAME */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!formData.firstName || !formData.lastName || !formData.username) {
+                            showMorphBar({
+                              type: 'warning',
+                              title: 'Complete Basic Info',
+                              message: 'Please enter your First Name, Last Name, and Username.'
+                            });
+                            return;
+                          }
+                          setActiveSection(2);
+                        }}
+                        className="w-full neo-btn bg-swaply-yellow text-swaply-black border-2 border-swaply-black py-3.5 rounded-2xl text-xs font-black shadow-hard flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Continue to About You & Agreements →</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* SECTION 2: ABOUT YOU & AGREEMENTS */}
+                {activeSection === 2 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-5"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* OCCUPATION */}
+                      <div>
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
+                          Occupation <span className="text-swaply-coral">*</span>
+                        </label>
+                        <select
+                          value={formData.occupation}
+                          onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
+                          className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
+                        >
+                          <option value="Student">Student</option>
+                          <option value="Working Professional">Working Professional</option>
+                          <option value="Freelancer">Freelancer</option>
+                          <option value="Founder">Founder</option>
+                          <option value="Teacher">Teacher</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      {/* COUNTRY */}
+                      <div>
+                        <label className="block text-xs font-black uppercase text-swaply-black mb-1.5 flex items-center gap-1">
+                          <Globe className="w-3.5 h-3.5 text-swaply-coral" /> Country <span className="text-swaply-coral">*</span>
+                        </label>
+                        <select
+                          value={formData.country}
+                          onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+                          className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
+                        >
+                          <option value="United States">United States</option>
+                          <option value="India">India</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Canada">Canada</option>
+                          <option value="Germany">Germany</option>
+                          <option value="Australia">Australia</option>
+                          <option value="Singapore">Singapore</option>
+                          <option value="Other Country">Other Country</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* HOW DID YOU HEAR ABOUT SWAPLYONE */}
                     <div>
                       <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
-                        Last Name <span className="text-swaply-coral">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Smith"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
-                      />
-                    </div>
-                  </div>
-
-                  {/* USERNAME WITH LIVE AVAILABILITY CHECK */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
-                        <AtSign className="w-3.5 h-3.5 text-swaply-coral" /> Username <span className="text-swaply-coral">*</span>
-                      </label>
-                      {usernameStatus.message && (
-                        <span className={`text-[11px] font-extrabold flex items-center gap-1 ${
-                          usernameStatus.checking ? 'text-amber-700' : usernameStatus.available ? 'text-emerald-700' : 'text-rose-700'
-                        }`}>
-                          {usernameStatus.checking && <RefreshCw className="w-3 h-3 animate-spin" />}
-                          {usernameStatus.available === true && <Check className="w-3 h-3" />}
-                          {usernameStatus.available === false && <ShieldAlert className="w-3 h-3" />}
-                          {usernameStatus.message}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-swaply-black/50 text-sm">@</span>
-                      <input
-                        type="text"
-                        required
-                        placeholder="jordansmith"
-                        value={formData.username}
-                        onChange={(e) => handleUsernameChange(e.target.value)}
-                        className="w-full bg-white border-2 border-swaply-black rounded-2xl pl-8 pr-4 py-3 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
-                      />
-                    </div>
-                    <p className="text-[11px] font-semibold text-swaply-black/60 mt-1">Unique handle for peer matching and video calls.</p>
-                  </div>
-
-                  {/* EMAIL ADDRESS */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-black uppercase text-swaply-black flex items-center gap-1">
-                        <Mail className="w-3.5 h-3.5 text-swaply-coral" /> Email Address <span className="text-swaply-coral">*</span>
-                      </label>
-                      {isEmailLocked && (
-                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Locked to Session
-                        </span>
-                      )}
-                    </div>
-                    <input
-                      type="email"
-                      required
-                      readOnly={isEmailLocked}
-                      placeholder="jordan@example.com"
-                      value={formData.email}
-                      onChange={(e) => !isEmailLocked && setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className={`w-full border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold shadow-hard-sm focus:outline-none ${
-                        isEmailLocked ? 'bg-slate-100 text-swaply-black/70 cursor-not-allowed' : 'bg-white text-swaply-black focus:ring-2 focus:ring-swaply-yellow'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* 2. ABOUT YOU SECTION */}
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center gap-2 pb-2 border-b-2 border-dashed border-swaply-black/20">
-                    <Briefcase className="w-4 h-4 text-swaply-coral" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-swaply-black">About You</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* OCCUPATION */}
-                    <div>
-                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
-                        Occupation <span className="text-swaply-coral">*</span>
+                        How did you hear about SwaplyOne?
                       </label>
                       <select
-                        value={formData.occupation}
-                        onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
+                        value={formData.referralSource}
+                        onChange={(e) => setFormData(prev => ({ ...prev, referralSource: e.target.value }))}
                         className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
                       >
-                        <option value="Student">Student</option>
-                        <option value="Working Professional">Working Professional</option>
-                        <option value="Freelancer">Freelancer</option>
-                        <option value="Founder">Founder</option>
-                        <option value="Teacher">Teacher</option>
+                        <option value="Social Media">Social Media (X / LinkedIn / Instagram)</option>
+                        <option value="Friend / Referral">Friend or Colleague Referral</option>
+                        <option value="Tech Community">Tech Community / Developer Forum</option>
+                        <option value="Search Engine">Search Engine (Google / Bing)</option>
                         <option value="Other">Other</option>
                       </select>
                     </div>
 
-                    {/* COUNTRY */}
+                    {/* WHY JOIN BETA (MAX 300 CHARS) */}
                     <div>
-                      <label className="block text-xs font-black uppercase text-swaply-black mb-1.5 flex items-center gap-1">
-                        <Globe className="w-3.5 h-3.5 text-swaply-coral" /> Country <span className="text-swaply-coral">*</span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-black uppercase text-swaply-black">
+                          Why do you want to join the beta? <span className="text-swaply-black/50">(Optional)</span>
+                        </label>
+                        <span className={`text-[11px] font-black ${formData.betaReason.length > 280 ? 'text-rose-700' : 'text-swaply-black/60'}`}>
+                          {formData.betaReason.length} / 300
+                        </span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        maxLength={300}
+                        placeholder="Tell us what skills you want to learn or exchange during 1-on-1 video calls..."
+                        value={formData.betaReason}
+                        onChange={(e) => setFormData(prev => ({ ...prev, betaReason: e.target.value }))}
+                        className="w-full bg-white border-2 border-swaply-black rounded-2xl p-4 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
+                      />
+                    </div>
+
+                    {/* AGREEMENTS CHECKBOXES */}
+                    <div className="space-y-3 pt-3 border-t-2 border-dashed border-swaply-black/20">
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={formData.agreeTerms}
+                          onChange={(e) => setFormData(prev => ({ ...prev, agreeTerms: e.target.checked }))}
+                          className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
+                        />
+                        <span>I agree to the Terms & Conditions <span className="text-swaply-coral">*</span></span>
                       </label>
-                      <select
-                        value={formData.country}
-                        onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                        className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
+
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={formData.agreePrivacy}
+                          onChange={(e) => setFormData(prev => ({ ...prev, agreePrivacy: e.target.checked }))}
+                          className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
+                        />
+                        <span>I agree to the Privacy Policy <span className="text-swaply-coral">*</span></span>
+                      </label>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black/80 select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.agreeUpdates}
+                          onChange={(e) => setFormData(prev => ({ ...prev, agreeUpdates: e.target.checked }))}
+                          className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
+                        />
+                        <span>I agree to receive beta updates via email (Optional)</span>
+                      </label>
+                    </div>
+
+                    {/* SUBMIT BUTTON */}
+                    <div className="pt-2 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveSection(1)}
+                        className="w-1/3 neo-btn bg-paper-card text-swaply-black border-2 border-swaply-black py-4 rounded-2xl text-xs font-black shadow-hard cursor-pointer"
                       >
-                        <option value="United States">United States</option>
-                        <option value="India">India</option>
-                        <option value="United Kingdom">United Kingdom</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Germany">Germany</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Singapore">Singapore</option>
-                        <option value="Other Country">Other Country</option>
-                      </select>
+                        ← Back
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={loading || status.registrationClosed || usernameStatus.available === false}
+                        className="w-2/3 neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-4 rounded-2xl text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {loading ? (
+                          <span>Sending OTP Code...</span>
+                        ) : (
+                          <>
+                            <span>Send OTP Code →</span>
+                            <Send className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
                     </div>
-                  </div>
-                </div>
-
-                {/* 3. OPTIONAL SECTION */}
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center gap-2 pb-2 border-b-2 border-dashed border-swaply-black/20">
-                    <FileText className="w-4 h-4 text-swaply-coral" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-swaply-black">Optional Details</h3>
-                  </div>
-
-                  {/* HOW DID YOU HEAR ABOUT SWAPLYONE */}
-                  <div>
-                    <label className="block text-xs font-black uppercase text-swaply-black mb-1.5">
-                      How did you hear about SwaplyOne?
-                    </label>
-                    <select
-                      value={formData.referralSource}
-                      onChange={(e) => setFormData(prev => ({ ...prev, referralSource: e.target.value }))}
-                      className="w-full bg-white border-2 border-swaply-black rounded-2xl px-4 py-3 text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm cursor-pointer"
-                    >
-                      <option value="Social Media">Social Media (X / LinkedIn / Instagram)</option>
-                      <option value="Friend / Referral">Friend or Colleague Referral</option>
-                      <option value="Tech Community">Tech Community / Developer Forum</option>
-                      <option value="Search Engine">Search Engine (Google / Bing)</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  {/* WHY JOIN BETA (MAX 300 CHARS) */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-black uppercase text-swaply-black">
-                        Why do you want to join the beta? <span className="text-swaply-black/50">(Optional)</span>
-                      </label>
-                      <span className={`text-[11px] font-black ${formData.betaReason.length > 280 ? 'text-rose-700' : 'text-swaply-black/60'}`}>
-                        {formData.betaReason.length} / 300
-                      </span>
-                    </div>
-                    <textarea
-                      rows={3}
-                      maxLength={300}
-                      placeholder="Tell us what skills you want to learn or exchange during 1-on-1 video calls..."
-                      value={formData.betaReason}
-                      onChange={(e) => setFormData(prev => ({ ...prev, betaReason: e.target.value }))}
-                      className="w-full bg-white border-2 border-swaply-black rounded-2xl p-4 text-sm font-bold text-swaply-black placeholder:text-swaply-black/40 focus:outline-none focus:ring-2 focus:ring-swaply-yellow shadow-hard-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* 4. AGREEMENTS CHECKBOXES */}
-                <div className="space-y-3 pt-3 border-t-2 border-dashed border-swaply-black/20">
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
-                    <input
-                      type="checkbox"
-                      required
-                      checked={formData.agreeTerms}
-                      onChange={(e) => setFormData(prev => ({ ...prev, agreeTerms: e.target.checked }))}
-                      className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
-                    />
-                    <span>I agree to the Terms & Conditions <span className="text-swaply-coral">*</span></span>
-                  </label>
-
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black select-none">
-                    <input
-                      type="checkbox"
-                      required
-                      checked={formData.agreePrivacy}
-                      onChange={(e) => setFormData(prev => ({ ...prev, agreePrivacy: e.target.checked }))}
-                      className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
-                    />
-                    <span>I agree to the Privacy Policy <span className="text-swaply-coral">*</span></span>
-                  </label>
-
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-swaply-black/80 select-none">
-                    <input
-                      type="checkbox"
-                      checked={formData.agreeUpdates}
-                      onChange={(e) => setFormData(prev => ({ ...prev, agreeUpdates: e.target.checked }))}
-                      className="w-4 h-4 rounded border-2 border-swaply-black text-swaply-coral focus:ring-0 cursor-pointer mt-0.5"
-                    />
-                    <span>I agree to receive beta updates via email (Optional)</span>
-                  </label>
-                </div>
-
-                {/* SUBMIT BUTTON */}
-                <button
-                  type="submit"
-                  disabled={loading || status.registrationClosed || usernameStatus.available === false}
-                  className="w-full neo-btn bg-swaply-coral hover:bg-swaply-orange text-white border-2 border-swaply-black py-4 rounded-2xl text-sm font-black shadow-hard flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {loading ? (
-                    <span>Sending OTP Code...</span>
-                  ) : (
-                    <>
-                      <span>Send OTP Verification Code →</span>
-                      <Send className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                  </motion.div>
+                )}
 
               </form>
             </div>
@@ -681,9 +748,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
             className="max-w-md mx-auto"
           >
             <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative text-center space-y-5">
-              <PaperClip className="top-3 right-4 rotate-12" />
-              <MaskingTape text="VERIFY EMAIL OTP" className="-top-3 left-6 -rotate-2" />
-
+              
               <div className="w-14 h-14 bg-swaply-yellow border-2 border-swaply-black rounded-2xl mx-auto flex items-center justify-center shadow-hard-sm">
                 <Mail className="w-7 h-7 text-swaply-black" />
               </div>
@@ -746,10 +811,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
           >
             {/* OFFICIAL PIONEER TICKET PASS */}
             <div className="bg-paper-cream border-3 border-swaply-black rounded-3xl p-6 sm:p-8 shadow-hard relative overflow-hidden text-left space-y-5">
-              <PaperClip className="top-3 right-4 rotate-12" />
-              <BinderClip className="-top-3 left-1/2 -translate-x-1/2" />
-              <MaskingTape text="VERIFIED PIONEER MEMBER" className="-top-3 left-6 -rotate-2" />
-
+              
               <div className="flex items-center justify-between pb-4 border-b-2 border-dashed border-swaply-black/20">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
