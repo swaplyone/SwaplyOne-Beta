@@ -44,7 +44,7 @@ export default function HeroSection({ onOpenJoinModal }) {
   };
 
   return (
-    <section id="hero" className="relative pt-40 sm:pt-48 lg:pt-52 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center overflow-visible">
+    <section id="hero" className="relative pt-24 sm:pt-28 lg:pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center overflow-visible">
       
       {/* SUBTLE AMBIENT BACKGROUND GLOW */}
       <div className="absolute top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-swaply-yellow/15 rounded-full blur-3xl pointer-events-none -z-10" />
