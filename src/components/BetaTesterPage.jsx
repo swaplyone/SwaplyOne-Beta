@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { OtpInput } from './OtpInput';
+import { getApiUrl } from '../config/apiConfig';
 
 export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const { showMorphBar } = useMorphBar();
@@ -67,7 +68,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
       if (emailToCheck) {
         // Query server database to verify if user registration is still active (not deleted by admin)
-        fetch(`/api/beta/verify-user?email=${encodeURIComponent(emailToCheck)}`)
+        fetch(getApiUrl(`/api/beta/verify-user?email=${encodeURIComponent(emailToCheck)}`))
           .then(res => res.json())
           .then(data => {
             if (data.registered && data.user) {
@@ -130,7 +131,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
     usernameCheckTimeout.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/username/check?username=${encodeURIComponent(clean)}`);
+        const res = await fetch(getApiUrl(`/api/username/check?username=${encodeURIComponent(clean)}`));
         const data = await res.json();
         setUsernameStatus({
           checking: false,
@@ -145,7 +146,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch('/api/beta/status');
+      const res = await fetch(getApiUrl('/api/beta/status'));
       const data = await res.json();
       if (data.success) {
         setStatus(data);
@@ -203,7 +204,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     });
 
     try {
-      const res = await fetch('/api/otp/send', {
+      const res = await fetch(getApiUrl('/api/otp/send'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -248,7 +249,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     });
 
     try {
-      const res = await fetch('/api/otp/send', {
+      const res = await fetch(getApiUrl('/api/otp/send'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -300,7 +301,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     });
 
     try {
-      const verifyRes = await fetch('/api/otp/verify', {
+      const verifyRes = await fetch(getApiUrl('/api/otp/verify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, otp: code })
@@ -323,7 +324,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
         message: 'Issuing your Pioneer Beta Pass...'
       });
 
-      const regRes = await fetch('/api/beta/register', {
+      const regRes = await fetch(getApiUrl('/api/beta/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

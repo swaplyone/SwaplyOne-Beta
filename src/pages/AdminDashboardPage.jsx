@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Lock, ShieldCheck, Download, Trash2, Search, RefreshCw, Mail, Activity, Settings, Plus, Minus, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
+import { getApiUrl } from '../config/apiConfig';
 
 export default function AdminDashboardPage({ onBackToHome }) {
   const { showMorphBar } = useMorphBar();
@@ -24,6 +25,13 @@ export default function AdminDashboardPage({ onBackToHome }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('users'); // 'users' | 'settings' | 'logs'
   const [loading, setLoading] = useState(false);
+
+  // Fetch Dashboard Data on Unlock
+  useEffect(() => {
+    if (authenticated) {
+      fetchDashboardData();
+    }
+  }, [authenticated]);
 
   // Passcode authentication
   const handleLogin = (e) => {
@@ -50,21 +58,21 @@ export default function AdminDashboardPage({ onBackToHome }) {
     setLoading(true);
     try {
       // 1. Fetch Stats
-      const statsRes = await fetch('/api/admin/stats');
+      const statsRes = await fetch(getApiUrl('/api/admin/stats'));
       const statsData = await statsRes.json();
       if (statsData.success) {
         setStats(statsData);
       }
 
       // 2. Fetch Users
-      const usersRes = await fetch('/api/admin/users');
+      const usersRes = await fetch(getApiUrl('/api/admin/users'));
       const usersData = await usersRes.json();
       if (usersData.success) {
         setUsers(usersData.users);
       }
 
       // 3. Fetch Email Logs
-      const logsRes = await fetch('/api/admin/email-logs');
+      const logsRes = await fetch(getApiUrl('/api/admin/email-logs'));
       const logsData = await logsRes.json();
       if (logsData.success) {
         setEmailLogs(logsData.logs);
@@ -86,7 +94,7 @@ export default function AdminDashboardPage({ onBackToHome }) {
     const targetEnabled = newEnabled !== undefined ? newEnabled : stats.registrationEnabled;
 
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch(getApiUrl('/api/admin/settings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxLimit: targetLimit, enabled: targetEnabled })
@@ -115,7 +123,7 @@ export default function AdminDashboardPage({ onBackToHome }) {
     if (!window.confirm(`Are you sure you want to delete ${userName}?`)) return;
 
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/api/admin/users/${userId}`), { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         showMorphBar({

@@ -28,7 +28,9 @@ import {
   Info,
   RefreshCw
 } from 'lucide-react';
+import { useMorphBar } from '../context/MorphBarContext';
 import SwaplyLogo from './SwaplyLogo';
+import { getApiUrl } from '../config/apiConfig';
 
 export default function MorphBar({
   currentUser,
@@ -106,7 +108,7 @@ export default function MorphBar({
 
         if (emailToCheck) {
           // Verify with database if user registration is still active (or if details updated)
-          fetch(`/api/beta/verify-user?email=${encodeURIComponent(emailToCheck)}`)
+          fetch(getApiUrl(`/api/beta/verify-user?email=${encodeURIComponent(emailToCheck)}`))
             .then(res => res.json())
             .then(data => {
               if (data.registered && data.user) {

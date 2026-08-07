@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, ShieldCheck, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowLeft, KeyRound, User, UserPlus } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { BinderClip, MaskingTape } from '../components/PaperCraft';
+import { getApiUrl } from '../config/apiConfig';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function LoginPage() {
     });
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(getApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -123,7 +124,7 @@ export default function LoginPage() {
     });
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(getApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password })
