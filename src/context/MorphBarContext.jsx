@@ -5,6 +5,7 @@ const MorphBarContext = createContext(null);
 
 export function MorphBarProvider({ children }) {
   const [notificationNotice, setNotificationNotice] = useState(null);
+  const [notificationType, setNotificationType] = useState('success'); // 'success' | 'error' | 'warning' | 'info' | 'loading'
   const timerRef = useRef(null);
 
   const dismiss = useCallback(() => {
@@ -15,13 +16,14 @@ export function MorphBarProvider({ children }) {
     setNotificationNotice(null);
   }, []);
 
-  const showMorphBar = useCallback(({ title, message, duration = 4500 }) => {
+  const showMorphBar = useCallback(({ type = 'success', title, message, duration = 4500 }) => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
 
     const noticeText = title ? `${title}: ${message || ''}` : message;
+    setNotificationType(type);
     setNotificationNotice(noticeText);
 
     if (duration > 0) {
@@ -35,7 +37,7 @@ export function MorphBarProvider({ children }) {
   return (
     <MorphBarContext.Provider value={{ showMorphBar, dismissMorphBar: dismiss }}>
       {children}
-      <MorphBar notificationNotice={notificationNotice} />
+      <MorphBar notificationNotice={notificationNotice} notificationType={notificationType} />
     </MorphBarContext.Provider>
   );
 }

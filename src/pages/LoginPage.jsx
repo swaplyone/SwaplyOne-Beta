@@ -290,7 +290,7 @@ export default function LoginPage() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm"
+                    className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-base sm:text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm"
                   />
                 </div>
 
@@ -305,7 +305,7 @@ export default function LoginPage() {
                       placeholder="Enter account password..."
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm pr-11"
+                      className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-base sm:text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm pr-11"
                     />
                     <button
                       type="button"
@@ -371,7 +371,7 @@ export default function LoginPage() {
                     placeholder="e.g. Jordan Smith"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm"
+                    className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-base sm:text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm"
                   />
                 </div>
 
@@ -385,7 +385,7 @@ export default function LoginPage() {
                     placeholder="jordan@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm"
+                    className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-base sm:text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm"
                   />
                 </div>
 
@@ -401,7 +401,7 @@ export default function LoginPage() {
                       placeholder="Create a secure password..."
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm pr-11"
+                      className="w-full px-4 py-3 bg-white border-2 border-swaply-black rounded-2xl text-base sm:text-sm font-bold text-swaply-black focus:outline-none focus:ring-2 focus:ring-swaply-coral shadow-hard-sm pr-11"
                     />
                     <button
                       type="button"

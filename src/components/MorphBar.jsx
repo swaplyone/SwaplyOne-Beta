@@ -22,7 +22,11 @@ import {
   ArrowRight,
   Sparkles,
   Command,
-  Clock
+  Clock,
+  XCircle,
+  AlertCircle,
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import SwaplyLogo from './SwaplyLogo';
 
@@ -39,7 +43,8 @@ export default function MorphBar({
   onAcceptFriendRequest,
   onRejectFriendRequest,
   securityAlertNotice,
-  notificationNotice
+  notificationNotice,
+  notificationType = 'success'
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -590,18 +595,36 @@ export default function MorphBar({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '0.6rem',
-                background: '#F1F6F1',
+                background: notificationType === 'error' ? '#FFF5F5' : notificationType === 'warning' ? '#FEFCE8' : '#F1F6F1',
                 borderRadius: '20px',
-                border: '2.5px solid #1B2233',
+                border: notificationType === 'error' ? '2.5px solid #D85B3E' : '2.5px solid #1B2233',
                 boxShadow: '4px 4px 0px 0px #1B2233'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#6D7B55', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <CheckCircle size={16} color="#FFF" />
-                </div>
-                <span style={{ fontWeight: 800, fontSize: '0.78rem', color: '#1B2233', fontFamily: 'var(--font-mono)', minWidth: 0, overflowWrap: 'anywhere', lineHeight: 1.25 }}>
-                  {notificationNotice || 'Action Completed Successfully'}
+                {notificationType === 'error' ? (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#D85B3E', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <XCircle size={16} color="#FFF" />
+                  </div>
+                ) : notificationType === 'warning' ? (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#E5983B', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <AlertTriangle size={16} color="#FFF" />
+                  </div>
+                ) : notificationType === 'loading' ? (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#3B82F6', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <RefreshCw size={14} color="#FFF" className="animate-spin" />
+                  </div>
+                ) : notificationType === 'info' ? (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#3B82F6', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Info size={16} color="#FFF" />
+                  </div>
+                ) : (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#6D7B55', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CheckCircle size={16} color="#FFF" />
+                  </div>
+                )}
+                <span style={{ fontWeight: 800, fontSize: '0.78rem', color: notificationType === 'error' ? '#9B2C2C' : '#1B2233', fontFamily: 'var(--font-mono)', minWidth: 0, overflowWrap: 'anywhere', lineHeight: 1.25 }}>
+                  {notificationNotice || 'Action Completed'}
                 </span>
               </div>
               <button
