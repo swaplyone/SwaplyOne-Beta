@@ -65,6 +65,62 @@ async function createTransporterForConfigAsync(overridePort = null) {
   return null;
 }
 
+// Send email via Resend HTTPS API (Port 443 - Never blocked by cloud host firewalls)
+async function sendViaResend(apiKey, { to, subject, html, from }) {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: from || 'SwaplyOne <onboarding@resend.dev>',
+        to: [to],
+        subject,
+        html
+      })
+    });
+    if (res.ok) {
+      console.log(`✅ Email successfully delivered to ${to} via Resend HTTP API!`);
+      return true;
+    }
+    const errData = await res.json().catch(() => ({}));
+    console.error('❌ Resend API error:', errData);
+  } catch (err) {
+    console.error('❌ Resend API request failed:', err.message);
+  }
+  return false;
+}
+
+// Send email via Brevo / Sendinblue HTTPS API (Port 443 - Never blocked by cloud host firewalls)
+async function sendViaBrevo(apiKey, { to, subject, html, from }) {
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'SwaplyOne', email: process.env.EMAIL_USER || 'founder@swaplyone.in' },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      })
+    });
+    if (res.ok) {
+      console.log(`✅ Email successfully delivered to ${to} via Brevo HTTP API!`);
+      return true;
+    }
+    const errData = await res.json().catch(() => ({}));
+    console.error('❌ Brevo API error:', errData);
+  } catch (err) {
+    console.error('❌ Brevo API request failed:', err.message);
+  }
+  return false;
+}
+
 export async function logEmail(emailLog) {
   const record = {
     id: `email_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -93,6 +149,26 @@ export async function sendEmail({ to, subject, html, emailType }) {
   let errorMsg = null;
   const config = getEmailConfig();
 
+  // 1. Try Resend HTTP API if RESEND_API_KEY is configured
+  if (process.env.RESEND_API_KEY) {
+    const resendSuccess = await sendViaResend(process.env.RESEND_API_KEY, { to, subject, html, from: config.from });
+    if (resendSuccess) {
+      await logEmail({ to, subject, emailType, status: 'SENT', error: null, bodySnippet: html.replace(/<[^>]+>/g, '').substring(0, 120) });
+      return true;
+    }
+  }
+
+  // 2. Try Brevo HTTP API if BREVO_API_KEY / SENDINBLUE_API_KEY is configured
+  const brevoKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+  if (brevoKey) {
+    const brevoSuccess = await sendViaBrevo(brevoKey, { to, subject, html, from: config.from });
+    if (brevoSuccess) {
+      await logEmail({ to, subject, emailType, status: 'SENT', error: null, bodySnippet: html.replace(/<[^>]+>/g, '').substring(0, 120) });
+      return true;
+    }
+  }
+
+  // 3. Fallback to Nodemailer SMTP Transporter
   const primaryTransporter = await createTransporterForConfigAsync();
 
   if (primaryTransporter) {
