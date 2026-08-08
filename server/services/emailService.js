@@ -215,7 +215,7 @@ export async function sendOtpEmail(email, otp) {
 
   return sendEmail({
     to: email,
-    subject: `🔑 ${otp} is your SwaplyOne Beta Verification Code`,
+    subject: 'Your SwaplyOne Beta Verification Code',
     html,
     emailType: 'otp'
   });
