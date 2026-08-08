@@ -11,15 +11,21 @@ try {
   // Ignore if not supported in older node environments
 }
 
-// Strict IPv4 DNS lookup function for Nodemailer socket creation
-function ipv4Lookup(hostname, options, callback) {
-  const opts = typeof options === 'function' ? {} : (options || {});
-  const cb = typeof options === 'function' ? options : callback;
-  opts.family = 4;
-  return dns.lookup(hostname, opts, cb);
+// Pre-resolve hostname to direct IPv4 string to prevent Node socket from attempting IPv6
+async function resolveIpv4Host(hostname) {
+  if (!hostname || hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/)) return hostname;
+  return new Promise((resolve) => {
+    dns.lookup(hostname, { family: 4 }, (err, address) => {
+      if (!err && address) {
+        console.log(`🌐 Resolved ${hostname} to IPv4 IP: ${address}`);
+        resolve(address);
+      } else {
+        console.warn(`⚠️ IPv4 lookup for ${hostname} fallback to original host`);
+        resolve(hostname);
+      }
+    });
+  });
 }
-
-let transporter = null;
 
 function getEmailConfig() {
   const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -30,14 +36,17 @@ function getEmailConfig() {
   return { host, port, user, pass, from };
 }
 
-function createTransporterForConfig(overridePort = null, forceCustomSmtp = false) {
+async function createTransporterForConfigAsync(overridePort = null) {
   const config = getEmailConfig();
   const port = overridePort || config.port;
   const secure = port === 465;
 
   if (config.host && config.user && config.pass) {
+    const targetHost = config.host;
+    const resolvedIp = await resolveIpv4Host(targetHost);
+
     return nodemailer.createTransport({
-      host: config.host,
+      host: resolvedIp, // Direct IPv4 IP address string (e.g. "192.178.211.108")
       port,
       secure,
       auth: {
@@ -46,10 +55,8 @@ function createTransporterForConfig(overridePort = null, forceCustomSmtp = false
       },
       tls: {
         rejectUnauthorized: false,
-        servername: config.host
+        servername: targetHost // Keeps SSL certificate valid for TLS SNI
       },
-      lookup: ipv4Lookup, // STRICT IPV4 LOOKUP: Fixes ENETUNREACH 2607:f8b0:... IPv6 error on Render
-      family: 4,
       connectionTimeout: 12000,
       greetingTimeout: 12000,
       socketTimeout: 15000
@@ -57,12 +64,6 @@ function createTransporterForConfig(overridePort = null, forceCustomSmtp = false
   }
   return null;
 }
-
-function initTransporter() {
-  transporter = createTransporterForConfig();
-}
-
-initTransporter();
 
 export async function logEmail(emailLog) {
   const record = {
@@ -88,31 +89,31 @@ export async function sendEmail({ to, subject, html, emailType }) {
   console.log(`Subject: ${subject}`);
   console.log(`========================================\n`);
 
-  initTransporter();
-
   let success = false;
   let errorMsg = null;
   const config = getEmailConfig();
 
-  if (transporter) {
+  const primaryTransporter = await createTransporterForConfigAsync();
+
+  if (primaryTransporter) {
     try {
-      await transporter.sendMail({
+      await primaryTransporter.sendMail({
         from: config.from,
         to,
         subject,
         html
       });
       success = true;
-      console.log(`✅ Email successfully delivered to ${to} via primary transporter!`);
+      console.log(`✅ Email successfully delivered to ${to} via primary transporter (${config.port})!`);
     } catch (err) {
-      console.error('❌ Primary send error:', err.message);
+      console.error(`❌ Primary send error (port ${config.port}):`, err.message);
       errorMsg = err.message;
 
-      // Fallback: Try alternative SMTP Port with IPv4 lookup
+      // Fallback: Try alternative SMTP Port (e.g. 587 vs 465) with explicit IPv4 IP
       const fallbackPort = config.port === 465 ? 587 : 465;
-      console.log(`🔄 Attempting fallback delivery via Port ${fallbackPort} (IPv4)...`);
+      console.log(`🔄 Attempting fallback delivery via Port ${fallbackPort} (Direct IPv4)...`);
       try {
-        const fallbackTransporter = createTransporterForConfig(fallbackPort, true);
+        const fallbackTransporter = await createTransporterForConfigAsync(fallbackPort);
         if (fallbackTransporter) {
           await fallbackTransporter.sendMail({
             from: config.from,
