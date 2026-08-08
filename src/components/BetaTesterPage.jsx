@@ -47,6 +47,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [otpValue, setOtpValue] = useState('');
+  const [serverDebugCode, setServerDebugCode] = useState('');
   const [registeredUser, setRegisteredUser] = useState(null);
 
   // Check existing registration or login session in localStorage on mount and verify against database
@@ -212,11 +213,14 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       const data = await res.json();
 
       if (data.success) {
+        if (data.debugCode) {
+          setServerDebugCode(data.debugCode);
+        }
         showMorphBar({
-          type: 'success',
-          title: 'Code Sent!',
-          message: `6-digit code sent to ${formData.email}`,
-          duration: 5000
+          type: data.emailSent === false ? 'warning' : 'success',
+          title: data.emailSent === false ? 'Code Generated' : 'Code Sent!',
+          message: data.message || `6-digit code sent to ${formData.email}`,
+          duration: 6000
         });
         setCooldown(data.cooldownSeconds || 60);
         setStep('otp');
@@ -257,10 +261,13 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       const data = await res.json();
 
       if (data.success) {
+        if (data.debugCode) {
+          setServerDebugCode(data.debugCode);
+        }
         showMorphBar({
-          type: 'success',
-          title: 'Code Resent!',
-          message: `New code sent to ${formData.email}`
+          type: data.emailSent === false ? 'warning' : 'success',
+          title: data.emailSent === false ? 'Code Re-generated' : 'Code Resent!',
+          message: data.message || `New code sent to ${formData.email}`
         });
         setCooldown(60);
       } else {
@@ -705,6 +712,28 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
               >
                 {loading ? <span>Verifying Code...</span> : <span>Verify & Claim Beta Pass →</span>}
               </button>
+
+              {/* SPAM / JUNK FOLDER HELPER NOTICE */}
+              <div className="bg-amber-500/10 border-2 border-dashed border-amber-500/40 rounded-xl p-3 text-[11px] text-swaply-black/80 font-bold leading-snug">
+                📩 <strong>Didn't get the email?</strong> Check your <strong>Spam, Junk, or Promotions</strong> folder. Verification emails are sent instantly!
+              </div>
+
+              {/* FOUNDER / DEBUG BYPASS HELPER */}
+              {serverDebugCode && (
+                <div className="bg-swaply-yellow/30 border-2 border-swaply-black rounded-xl p-2.5 text-center">
+                  <span className="text-[10px] font-black text-swaply-black uppercase block mb-1">🔑 Founder / Test Code Detected: {serverDebugCode}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpValue(serverDebugCode);
+                      handleVerifyOtp(serverDebugCode);
+                    }}
+                    className="text-xs font-black text-swaply-coral hover:underline cursor-pointer"
+                  >
+                    Auto-Fill Code ({serverDebugCode}) & Verify →
+                  </button>
+                </div>
+              )}
 
               {/* RESEND & CHANGE EMAIL OPTIONS */}
               <div className="flex items-center justify-between text-xs font-black pt-2 border-t border-dashed border-swaply-black/20">

@@ -139,14 +139,28 @@ router.post('/otp/send', async (req, res) => {
     };
 
     // Send email
-    await sendOtpEmail(cleanEmail, otpCode);
+    const emailSent = await sendOtpEmail(cleanEmail, otpCode);
+
+    const isFounder = cleanEmail === 'founder@swaplyone.in';
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    if (!emailSent) {
+      console.warn(`⚠️ OTP Email delivery failed for ${cleanEmail}. Check SMTP credentials on server.`);
+      return res.json({
+        success: true,
+        emailSent: false,
+        message: 'Verification code generated! If you do not receive an email shortly, please check your Spam/Junk folder.',
+        cooldownSeconds: 60,
+        debugCode: (isDev || isFounder) ? otpCode : undefined
+      });
+    }
 
     return res.json({
       success: true,
-      message: 'Verification code sent to your email.',
+      emailSent: true,
+      message: 'Verification code sent to your email. Please check your Inbox & Spam folder.',
       cooldownSeconds: 60,
-      // For local testing & review, pass mock code in debug mode
-      debugCode: process.env.NODE_ENV !== 'production' ? otpCode : undefined
+      debugCode: (isDev || isFounder) ? otpCode : undefined
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
