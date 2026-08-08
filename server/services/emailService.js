@@ -1,10 +1,28 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { db, isFirebaseConnected, localStore } from '../config/firebase.js';
+
+// Force Node.js to resolve IPv4 addresses first globally (fixes ENETUNREACH on Render/AWS)
+try {
+  if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+  }
+} catch (e) {
+  // Ignore if not supported in older node environments
+}
+
+// Strict IPv4 DNS lookup function for Nodemailer socket creation
+function ipv4Lookup(hostname, options, callback) {
+  const opts = typeof options === 'function' ? {} : (options || {});
+  const cb = typeof options === 'function' ? options : callback;
+  opts.family = 4;
+  return dns.lookup(hostname, opts, cb);
+}
 
 let transporter = null;
 
 function getEmailConfig() {
-  const host = process.env.EMAIL_HOST || process.env.SMTP_HOST;
+  const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587');
   const user = process.env.EMAIL_USER || process.env.SMTP_USER;
   const pass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS;
@@ -15,25 +33,25 @@ function getEmailConfig() {
 function createTransporterForConfig(overridePort = null, forceCustomSmtp = false) {
   const config = getEmailConfig();
   const port = overridePort || config.port;
-  const secure = port === 465 || process.env.SMTP_SECURE === 'true';
+  const secure = port === 465;
 
   if (config.host && config.user && config.pass) {
-    // For cloud environments (e.g. Render/AWS/Vercel), explicit host/port with family: 4 is much more reliable than service: 'gmail'
     return nodemailer.createTransport({
-      host: config.host || 'smtp.gmail.com',
-      port: port === 587 ? 587 : 465,
-      secure: port === 465 || port !== 587, // true for 465, false for 587
+      host: config.host,
+      port,
+      secure,
       auth: {
         user: config.user,
         pass: config.pass,
       },
       tls: {
         rejectUnauthorized: false,
-        servername: config.host || 'smtp.gmail.com'
+        servername: config.host
       },
-      family: 4, // FORCE IPV4 ONLY: Fixes ENETUNREACH / IPv6 connection timeouts on Render & cloud hosts
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
+      lookup: ipv4Lookup, // STRICT IPV4 LOOKUP: Fixes ENETUNREACH 2607:f8b0:... IPv6 error on Render
+      family: 4,
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
       socketTimeout: 15000
     });
   }
@@ -90,10 +108,11 @@ export async function sendEmail({ to, subject, html, emailType }) {
       console.error('❌ Primary send error:', err.message);
       errorMsg = err.message;
 
-      // Fallback: Try custom SMTP Port 465 (IPv4)
-      console.log('🔄 Attempting fallback delivery via SSL Port 465 (IPv4)...');
+      // Fallback: Try alternative SMTP Port with IPv4 lookup
+      const fallbackPort = config.port === 465 ? 587 : 465;
+      console.log(`🔄 Attempting fallback delivery via Port ${fallbackPort} (IPv4)...`);
       try {
-        const fallbackTransporter = createTransporterForConfig(465, true);
+        const fallbackTransporter = createTransporterForConfig(fallbackPort, true);
         if (fallbackTransporter) {
           await fallbackTransporter.sendMail({
             from: config.from,
@@ -103,11 +122,11 @@ export async function sendEmail({ to, subject, html, emailType }) {
           });
           success = true;
           errorMsg = null;
-          console.log(`✅ Fallback delivery succeeded via SSL Port 465 to ${to}!`);
+          console.log(`✅ Fallback delivery succeeded via Port ${fallbackPort} to ${to}!`);
         }
       } catch (fallbackErr) {
         console.error('❌ Fallback delivery failed:', fallbackErr.message);
-        errorMsg = `Primary: ${err.message} | Fallback (465): ${fallbackErr.message}`;
+        errorMsg = `Primary (${config.port}): ${err.message} | Fallback (${fallbackPort}): ${fallbackErr.message}`;
       }
     }
   } else {
