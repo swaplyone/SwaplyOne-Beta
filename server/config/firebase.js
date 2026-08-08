@@ -9,6 +9,7 @@ class LocalFirestoreStore {
   constructor() {
     this.data = {
       users: [],
+      beta_users: [],
       settings: {
         id: 'global_settings',
         maxLimit: 150,
@@ -21,30 +22,8 @@ class LocalFirestoreStore {
       admin_logs: []
     };
 
-    // Pre-seed mock users if empty for demonstration
-    this.data.users = [
-      {
-        id: 'usr_1',
-        betaId: 'SWAP-BETA-1001',
-        name: 'Alex Rivera',
-        email: 'alex.rivera@example.com',
-        track: 'pioneer',
-        skillsToTest: 'Web Dev & Coding Swaps',
-        experience: 'Love building dynamic web apps and finding edge cases.',
-        createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
-      },
-      {
-        id: 'usr_2',
-        betaId: 'SWAP-BETA-1002',
-        name: 'Sarah Chen',
-        email: 'sarah.chen@example.com',
-        track: 'pioneer',
-        skillsToTest: 'UI / Layout Edge Cases',
-        experience: 'Full-stack developer focused on mobile UI testing.',
-        createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
-      }
-    ];
-    this.data.settings.currentCount = this.data.users.length;
+    this.data.users = [];
+    this.data.settings.currentCount = 0;
   }
 
   getCollection(name) {

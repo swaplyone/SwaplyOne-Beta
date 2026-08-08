@@ -4,7 +4,7 @@ import confetti from 'canvas-confetti';
 import { Sparkles, UserCheck, CheckCircle2, ArrowLeft, Send, Lock, Copy, RefreshCw, Users, ShieldCheck, Mail, Check, ShieldAlert, AtSign, Globe, Briefcase, FileText } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { OtpInput } from './OtpInput';
-import { getApiUrl } from '../config/apiConfig';
+import { getApiUrl, fetchWithRetry } from '../config/apiConfig';
 
 export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
   const { showMorphBar } = useMorphBar();
@@ -205,11 +205,23 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     });
 
     try {
-      const res = await fetch(getApiUrl('/api/otp/send'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
-      });
+      const res = await fetchWithRetry(
+        getApiUrl('/api/otp/send'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email })
+        },
+        2,
+        3000,
+        (attempt) => {
+          showMorphBar({
+            type: 'loading',
+            title: 'Server Waking Up...',
+            message: `Connecting to registration server on Render (Attempt ${attempt}/2)...`
+          });
+        }
+      );
       const data = await res.json();
 
       if (data.success) {
@@ -234,8 +246,9 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
     } catch (err) {
       showMorphBar({
         type: 'error',
-        title: 'Network Error',
-        message: 'Could not connect to registration server.'
+        title: 'Connection Error',
+        message: 'Server is starting up or unreachable. Please wait 10 seconds and try again.',
+        duration: 8000
       });
     } finally {
       setLoading(false);
@@ -718,22 +731,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
                 📩 <strong>Didn't get the email?</strong> Check your <strong>Spam, Junk, or Promotions</strong> folder. Verification emails are sent instantly!
               </div>
 
-              {/* FOUNDER / DEBUG BYPASS HELPER */}
-              {serverDebugCode && (
-                <div className="bg-swaply-yellow/30 border-2 border-swaply-black rounded-xl p-2.5 text-center">
-                  <span className="text-[10px] font-black text-swaply-black uppercase block mb-1">🔑 Founder / Test Code Detected: {serverDebugCode}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpValue(serverDebugCode);
-                      handleVerifyOtp(serverDebugCode);
-                    }}
-                    className="text-xs font-black text-swaply-coral hover:underline cursor-pointer"
-                  >
-                    Auto-Fill Code ({serverDebugCode}) & Verify →
-                  </button>
-                </div>
-              )}
+
 
               {/* RESEND & CHANGE EMAIL OPTIONS */}
               <div className="flex items-center justify-between text-xs font-black pt-2 border-t border-dashed border-swaply-black/20">

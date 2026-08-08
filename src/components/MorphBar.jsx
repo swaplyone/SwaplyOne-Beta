@@ -644,7 +644,7 @@ export default function MorphBar({
                   </div>
                 )}
                 <span style={{ fontWeight: 800, fontSize: '0.78rem', color: notificationType === 'error' ? '#9B2C2C' : '#1B2233', fontFamily: 'var(--font-mono)', minWidth: 0, overflowWrap: 'anywhere', lineHeight: 1.25 }}>
-                  {notificationNotice || 'Action Completed'}
+                  {notificationNotice || (notificationType === 'error' ? 'Error occurred' : 'Notification')}
                 </span>
               </div>
               <button

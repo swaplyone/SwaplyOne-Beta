@@ -29,13 +29,58 @@ async function updateSettings(newSettings) {
   }
 }
 
-// Helper: Get users
+// Helper: Get registered account users
 async function getUsers() {
-  if (isFirebaseConnected && db) {
-    const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  try {
+    if (isFirebaseConnected && db) {
+      const snapshot = await db.collection('users').get();
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
+  } catch (err) {
+    console.warn('⚠️ Firestore getUsers error:', err.message);
   }
-  return localStore.data.users;
+  return localStore.data.users || [];
+}
+
+// Helper: Get beta pass tester registrations
+async function getBetaUsers() {
+  try {
+    let betaList = [];
+    let userList = [];
+
+    if (isFirebaseConnected && db) {
+      const betaSnapshot = await db.collection('beta_users').get();
+      betaList = betaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const userSnapshot = await db.collection('users').get();
+      userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } else {
+      betaList = localStore.data.beta_users || [];
+      userList = localStore.data.users || [];
+    }
+
+    const combinedMap = new Map();
+    for (const b of betaList) {
+      const key = (b.email || b.id || '').toLowerCase();
+      if (key) combinedMap.set(key, b);
+    }
+
+    for (const u of userList) {
+      if (u.betaId) {
+        const key = (u.email || u.id || '').toLowerCase();
+        if (key && !combinedMap.has(key)) {
+          combinedMap.set(key, u);
+        }
+      }
+    }
+
+    const result = Array.from(combinedMap.values());
+    return result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  } catch (err) {
+    console.warn('⚠️ Firestore getBetaUsers error:', err.message);
+  }
+  return localStore.data.beta_users || [];
 }
 
 // -------------------------------------------------------------
@@ -44,8 +89,8 @@ async function getUsers() {
 router.get('/beta/status', async (req, res) => {
   try {
     const settings = await getSettings();
-    const users = await getUsers();
-    const currentCount = users.length;
+    const betaUsers = await getBetaUsers();
+    const currentCount = betaUsers.length;
     const maxLimit = settings.maxLimit || 150;
     const enabled = settings.enabled !== false;
     const remainingSlots = Math.max(0, maxLimit - currentCount);
@@ -64,7 +109,7 @@ router.get('/beta/status', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 1.5 GET /api/beta/verify-user - Verify if registered user exists in DB
+// 1.5 GET /api/beta/verify-user - Verify if beta pass user exists in DB
 // -------------------------------------------------------------
 router.get('/beta/verify-user', async (req, res) => {
   try {
@@ -73,11 +118,16 @@ router.get('/beta/verify-user', async (req, res) => {
       return res.json({ registered: false });
     }
 
+    const betaUsers = await getBetaUsers();
     const users = await getUsers();
-    const user = users.find(u => u.email === cleanEmail && u.betaId);
 
-    if (user) {
-      return res.json({ registered: true, user });
+    let betaUser = betaUsers.find(u => u.email === cleanEmail && u.betaId);
+    if (!betaUser) {
+      betaUser = users.find(u => u.email === cleanEmail && u.betaId);
+    }
+
+    if (betaUser) {
+      return res.json({ registered: true, user: betaUser });
     }
 
     return res.json({ registered: false });
@@ -85,6 +135,48 @@ router.get('/beta/verify-user', async (req, res) => {
     return res.json({ registered: false });
   }
 });
+
+// -------------------------------------------------------------
+// Helper: Save OTP code
+async function saveOtp(email, record) {
+  localStore.data.otp_codes[email] = record;
+  if (isFirebaseConnected && db) {
+    try {
+      await db.collection('otp_codes').doc(email).set(record);
+    } catch (err) {
+      console.warn('⚠️ Firestore saveOtp error:', err.message);
+    }
+  }
+}
+
+// Helper: Get OTP code
+async function getOtp(email) {
+  let record = localStore.data.otp_codes[email];
+  if (!record && isFirebaseConnected && db) {
+    try {
+      const doc = await db.collection('otp_codes').doc(email).get();
+      if (doc.exists) {
+        record = doc.data();
+        localStore.data.otp_codes[email] = record;
+      }
+    } catch (err) {
+      console.warn('⚠️ Firestore getOtp error:', err.message);
+    }
+  }
+  return record;
+}
+
+// Helper: Delete OTP code
+async function deleteOtp(email) {
+  delete localStore.data.otp_codes[email];
+  if (isFirebaseConnected && db) {
+    try {
+      await db.collection('otp_codes').doc(email).delete();
+    } catch (err) {
+      console.warn('⚠️ Firestore deleteOtp error:', err.message);
+    }
+  }
+}
 
 // -------------------------------------------------------------
 // 2. POST /api/otp/send - Generate & send OTP
@@ -100,22 +192,22 @@ router.post('/otp/send', async (req, res) => {
 
     // Check system status
     const settings = await getSettings();
-    const users = await getUsers();
+    const betaUsers = await getBetaUsers();
     if (!settings.enabled) {
       return res.status(400).json({ success: false, message: 'Registration is currently disabled by admin.' });
     }
-    if (users.length >= settings.maxLimit) {
+    if (betaUsers.length >= settings.maxLimit) {
       return res.status(400).json({ success: false, message: 'Beta registration limit reached (150 users max).' });
     }
 
     // Check if Beta Pass already claimed for this email
-    const existingUser = users.find(u => u.email === cleanEmail && u.betaId);
+    const existingUser = betaUsers.find(u => u.email === cleanEmail && u.betaId);
     if (existingUser) {
       return res.status(400).json({ success: false, message: `Beta Pass (${existingUser.betaId}) already claimed for ${cleanEmail}.` });
     }
 
     // Check OTP cooldown
-    const existingOtp = localStore.data.otp_codes[cleanEmail];
+    const existingOtp = await getOtp(cleanEmail);
     if (existingOtp && Date.now() - existingOtp.createdAt < 60000) {
       const waitSec = Math.ceil((60000 - (Date.now() - existingOtp.createdAt)) / 1000);
       return res.status(429).json({
@@ -129,7 +221,7 @@ router.post('/otp/send', async (req, res) => {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    localStore.data.otp_codes[cleanEmail] = {
+    const newRecord = {
       email: cleanEmail,
       code: otpCode,
       createdAt: Date.now(),
@@ -137,6 +229,8 @@ router.post('/otp/send', async (req, res) => {
       attempts: 0,
       verified: false
     };
+
+    await saveOtp(cleanEmail, newRecord);
 
     // Send email
     const emailSent = await sendOtpEmail(cleanEmail, otpCode);
@@ -146,12 +240,11 @@ router.post('/otp/send', async (req, res) => {
 
     if (!emailSent) {
       console.warn(`⚠️ OTP Email delivery failed for ${cleanEmail}. Check SMTP credentials on server.`);
-      return res.json({
-        success: true,
+      return res.status(500).json({
+        success: false,
         emailSent: false,
-        message: 'Verification code generated! If you do not receive an email shortly, please check your Spam/Junk folder.',
-        cooldownSeconds: 60,
-        debugCode: (isDev || isFounder) ? otpCode : undefined
+        message: 'Could not deliver verification email. Server SMTP delivery failed. Please check server logs or contact support.',
+        cooldownSeconds: 15
       });
     }
 
@@ -159,8 +252,7 @@ router.post('/otp/send', async (req, res) => {
       success: true,
       emailSent: true,
       message: 'Verification code sent to your email. Please check your Inbox & Spam folder.',
-      cooldownSeconds: 60,
-      debugCode: (isDev || isFounder) ? otpCode : undefined
+      cooldownSeconds: 60
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -178,24 +270,25 @@ router.post('/otp/verify', async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const otpRecord = localStore.data.otp_codes[cleanEmail];
+    const otpRecord = await getOtp(cleanEmail);
 
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'No verification request found for this email. Please request an OTP first.' });
     }
 
     if (Date.now() > otpRecord.expiresAt) {
-      delete localStore.data.otp_codes[cleanEmail];
+      await deleteOtp(cleanEmail);
       return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
     }
 
     if (otpRecord.attempts >= 5) {
-      delete localStore.data.otp_codes[cleanEmail];
+      await deleteOtp(cleanEmail);
       return res.status(400).json({ success: false, message: 'Too many invalid attempts. Please request a new code.' });
     }
 
     if (otpRecord.code !== otp.trim()) {
       otpRecord.attempts += 1;
+      await saveOtp(cleanEmail, otpRecord);
       return res.status(400).json({ success: false, message: 'Invalid verification code. Please check and try again.' });
     }
 
@@ -203,6 +296,7 @@ router.post('/otp/verify', async (req, res) => {
     const token = `verif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     otpRecord.verified = true;
     otpRecord.token = token;
+    await saveOtp(cleanEmail, otpRecord);
 
     return res.json({
       success: true,
@@ -271,7 +365,7 @@ router.post('/beta/register', async (req, res) => {
     }
 
     // STRICT OTP VERIFICATION CHECK: Only allow storing user and issuing betaId if email was verified via OTP
-    const otpRecord = localStore.data.otp_codes[cleanEmail];
+    const otpRecord = await getOtp(cleanEmail);
     const isTokenValid = otpRecord && otpRecord.verified === true && (otpRecord.token === verificationToken || Boolean(verificationToken));
 
     if (!isTokenValid) {
@@ -282,23 +376,23 @@ router.post('/beta/register', async (req, res) => {
     }
 
     const settings = await getSettings();
-    const users = await getUsers();
+    const betaUsers = await getBetaUsers();
 
     if (!settings.enabled) {
       return res.status(400).json({ success: false, message: 'Beta registration is currently disabled.' });
     }
 
-    if (users.length >= settings.maxLimit) {
+    if (betaUsers.length >= settings.maxLimit) {
       return res.status(400).json({ success: false, message: 'Beta registration limit reached.' });
     }
 
-    const existingUser = users.find(u => u.email === cleanEmail && u.betaId);
+    const existingUser = betaUsers.find(u => u.email === cleanEmail && u.betaId);
     if (existingUser) {
       return res.status(400).json({ success: false, message: `Beta Pass (${existingUser.betaId}) already claimed for ${cleanEmail}.` });
     }
 
     // Generate Conflict-Free Beta ID format (e.g. SWAP-BETA-1004)
-    const existingNumbers = users
+    const existingNumbers = betaUsers
       .map(u => {
         const match = (u.betaId || '').match(/SWAP-BETA-(\d+)/i);
         return match ? parseInt(match[1], 10) : 0;
@@ -328,17 +422,17 @@ router.post('/beta/register', async (req, res) => {
     };
 
     if (isFirebaseConnected && db) {
-      await db.collection('users').doc(newUser.id).set(newUser);
+      await db.collection('beta_users').doc(newUser.id).set(newUser);
       await db.collection('settings').doc('global_settings').set({
-        currentCount: users.length + 1
+        currentCount: betaUsers.length + 1
       }, { merge: true });
     } else {
-      localStore.data.users.unshift(newUser);
-      localStore.data.settings.currentCount = localStore.data.users.length;
+      localStore.data.beta_users.unshift(newUser);
+      localStore.data.settings.currentCount = localStore.data.beta_users.length;
     }
 
     // Cleanup OTP code record
-    delete localStore.data.otp_codes[cleanEmail];
+    await deleteOtp(cleanEmail);
 
     // Trigger emails asynchronously
     sendRegistrationSuccessEmail(cleanEmail, newUser.name, betaId);
@@ -382,7 +476,8 @@ router.post('/auth/register', async (req, res) => {
     }
 
     const users = await getUsers();
-    const existingUser = users.find(u => u.email === cleanEmail);
+    const betaUsers = await getBetaUsers();
+    const existingUser = users.find(u => u.email === cleanEmail) || betaUsers.find(u => u.email === cleanEmail);
 
     if (existingUser && existingUser.passwordHash) {
       return res.status(400).json({ success: false, message: 'An account with this email already exists. Please sign in.' });
@@ -477,7 +572,15 @@ router.post('/auth/login', async (req, res) => {
     }
 
     const users = await getUsers();
-    const user = users.find(u => u.email === cleanEmail);
+    const betaUsers = await getBetaUsers();
+
+    let user = users.find(u => u.email === cleanEmail);
+    let isBetaAccount = false;
+
+    if (!user) {
+      user = betaUsers.find(u => u.email === cleanEmail);
+      if (user) isBetaAccount = true;
+    }
 
     if (!user) {
       return res.status(400).json({
@@ -493,6 +596,16 @@ router.post('/auth/login', async (req, res) => {
           success: false,
           message: 'Incorrect password. Please check your password and try again.'
         });
+      }
+    } else {
+      // First password sign-in for Beta Pass holder: auto-link password!
+      const { hash, salt } = hashPassword(password);
+      user.passwordHash = hash;
+      user.salt = salt;
+
+      if (isFirebaseConnected && db) {
+        const collectionName = isBetaAccount ? 'beta_users' : 'users';
+        await db.collection(collectionName).doc(user.id).set({ passwordHash: hash, salt }, { merge: true });
       }
     }
 
@@ -518,16 +631,28 @@ router.post('/auth/login', async (req, res) => {
 router.get('/admin/stats', async (req, res) => {
   try {
     const settings = await getSettings();
-    const users = await getUsers();
+    const betaUsers = await getBetaUsers();
     const otpsSent = Object.keys(localStore.data.otp_codes).length;
-    const emailsSent = localStore.data.email_logs.length;
+    let emailsSent = localStore.data.email_logs.length;
+
+    if (isFirebaseConnected && db) {
+      try {
+        const snapshot = await db.collection('email_logs').get();
+        emailsSent = snapshot.size;
+      } catch (e) {}
+    }
+
+    const currentCount = betaUsers.length;
+    const maxLimit = settings.maxLimit || 150;
+    const enabled = settings.enabled !== false;
+    const remainingSlots = Math.max(0, maxLimit - currentCount);
 
     return res.json({
       success: true,
-      totalRegistered: users.length,
-      maxLimit: settings.maxLimit || 150,
-      remainingSlots: Math.max(0, (settings.maxLimit || 150) - users.length),
-      registrationEnabled: settings.enabled !== false,
+      totalRegistered: currentCount,
+      maxLimit,
+      remainingSlots,
+      registrationEnabled: enabled,
       otpsSent,
       emailsSent
     });
@@ -581,7 +706,7 @@ router.post('/admin/settings', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 7. ADMIN ENDPOINTS: GET /api/admin/users
+// 7. ADMIN ENDPOINTS: GET /api/admin/users (Registered Accounts)
 // -------------------------------------------------------------
 router.get('/admin/users', async (req, res) => {
   try {
@@ -591,9 +716,8 @@ router.get('/admin/users', async (req, res) => {
     if (q) {
       const searchTerm = q.toLowerCase();
       users = users.filter(u =>
-        u.name.toLowerCase().includes(searchTerm) ||
-        u.email.toLowerCase().includes(searchTerm) ||
-        u.betaId.toLowerCase().includes(searchTerm)
+        (u.name || '').toLowerCase().includes(searchTerm) ||
+        (u.email || '').toLowerCase().includes(searchTerm)
       );
     }
 
@@ -604,7 +728,30 @@ router.get('/admin/users', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 8. ADMIN ENDPOINTS: DELETE /api/admin/users/:id
+// 7.5 ADMIN ENDPOINTS: GET /api/admin/beta-users (Beta Pass Roster)
+// -------------------------------------------------------------
+router.get('/admin/beta-users', async (req, res) => {
+  try {
+    let betaUsers = await getBetaUsers();
+    const { q } = req.query;
+
+    if (q) {
+      const searchTerm = q.toLowerCase();
+      betaUsers = betaUsers.filter(u =>
+        (u.name || '').toLowerCase().includes(searchTerm) ||
+        (u.email || '').toLowerCase().includes(searchTerm) ||
+        (u.betaId || '').toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return res.json({ success: true, count: betaUsers.length, betaUsers });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 8. ADMIN ENDPOINTS: DELETE /api/admin/users/:id (Account User)
 // -------------------------------------------------------------
 router.delete('/admin/users/:id', async (req, res) => {
   try {
@@ -614,17 +761,47 @@ router.delete('/admin/users/:id', async (req, res) => {
       await db.collection('users').doc(id).delete();
     } else {
       localStore.data.users = localStore.data.users.filter(u => u.id !== id);
-      localStore.data.settings.currentCount = localStore.data.users.length;
     }
 
     localStore.data.admin_logs.unshift({
       id: `log_${Date.now()}`,
       action: 'USER_DELETED',
-      details: `User ${id} removed by admin`,
+      details: `Account User ${id} removed by admin`,
       timestamp: new Date().toISOString()
     });
 
-    return res.json({ success: true, message: 'User deleted successfully.' });
+    return res.json({ success: true, message: 'Account user deleted successfully.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// 8.5 ADMIN ENDPOINTS: DELETE /api/admin/beta-users/:id (Beta Pass Only)
+// -------------------------------------------------------------
+router.delete('/admin/beta-users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (isFirebaseConnected && db) {
+      await db.collection('beta_users').doc(id).delete();
+      const updatedBeta = await getBetaUsers();
+      await db.collection('settings').doc('global_settings').set({
+        currentCount: updatedBeta.length
+      }, { merge: true });
+    } else {
+      localStore.data.beta_users = localStore.data.beta_users.filter(u => u.id !== id);
+      localStore.data.settings.currentCount = localStore.data.beta_users.length;
+    }
+
+    localStore.data.admin_logs.unshift({
+      id: `log_${Date.now()}`,
+      action: 'BETA_USER_DELETED',
+      details: `Beta Pass ${id} removed by admin (Account details untouched)`,
+      timestamp: new Date().toISOString()
+    });
+
+    return res.json({ success: true, message: 'Beta Pass record removed. Account details remain untouched.' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

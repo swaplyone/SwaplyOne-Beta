@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, ShieldCheck, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowLeft, KeyRound, User, UserPlus } from 'lucide-react';
 import { useMorphBar } from '../context/MorphBarContext';
 import { BinderClip, MaskingTape } from '../components/PaperCraft';
-import { getApiUrl } from '../config/apiConfig';
+import { getApiUrl, fetchWithRetry } from '../config/apiConfig';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -53,11 +53,23 @@ export default function LoginPage() {
     });
 
     try {
-      const res = await fetch(getApiUrl('/api/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      const res = await fetchWithRetry(
+        getApiUrl('/api/auth/login'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        },
+        2,
+        3000,
+        (attempt) => {
+          showMorphBar({
+            type: 'loading',
+            title: 'Server Waking Up...',
+            message: `Backend is starting up on Render (Attempt ${attempt}/2). Please hold on...`
+          });
+        }
+      );
       const data = await res.json();
 
       if (data.success) {
@@ -88,8 +100,9 @@ export default function LoginPage() {
     } catch (err) {
       showMorphBar({
         type: 'error',
-        title: 'Network Error',
-        message: 'Could not connect to authentication server.'
+        title: 'Server Unreachable',
+        message: 'Could not connect to authentication server. Please check your connection or wait 10s and try again.',
+        duration: 8000
       });
       setLoading(false);
     }
@@ -124,11 +137,23 @@ export default function LoginPage() {
     });
 
     try {
-      const res = await fetch(getApiUrl('/api/auth/register'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      });
+      const res = await fetchWithRetry(
+        getApiUrl('/api/auth/register'),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        },
+        2,
+        3000,
+        (attempt) => {
+          showMorphBar({
+            type: 'loading',
+            title: 'Server Waking Up...',
+            message: `Backend is starting up on Render (Attempt ${attempt}/2). Please hold on...`
+          });
+        }
+      );
       const data = await res.json();
 
       if (data.success) {
@@ -155,8 +180,9 @@ export default function LoginPage() {
     } catch (err) {
       showMorphBar({
         type: 'error',
-        title: 'Network Error',
-        message: 'Could not connect to authentication server.'
+        title: 'Server Unreachable',
+        message: 'Could not connect to authentication server. Please check your connection or wait 10s and try again.',
+        duration: 8000
       });
       setLoading(false);
     }

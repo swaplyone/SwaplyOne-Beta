@@ -6,4 +6,17 @@ export function getApiUrl(path) {
   return `${API_BASE}${cleanPath}`;
 }
 
+export async function fetchWithRetry(url, options = {}, retries = 2, delayMs = 3500, onRetry = null) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      if (onRetry) onRetry(attempt + 1, retries);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
 export default API_BASE;
