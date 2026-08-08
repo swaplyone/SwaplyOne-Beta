@@ -1,6 +1,9 @@
 import nodemailer from 'nodemailer';
 import dns from 'dns';
+import dotenv from 'dotenv';
 import { db, isFirebaseConnected, localStore } from '../config/firebase.js';
+
+dotenv.config();
 
 // Force Node.js to resolve IPv4 addresses first globally (fixes ENETUNREACH on Render/AWS)
 try {
