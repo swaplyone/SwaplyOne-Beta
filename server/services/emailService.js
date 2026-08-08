@@ -12,25 +12,26 @@ function getEmailConfig() {
   return { host, port, user, pass, from };
 }
 
-function createTransporterForConfig(overridePort = null) {
+function createTransporterForConfig(overridePort = null, forceCustomSmtp = false) {
   const config = getEmailConfig();
   const port = overridePort || config.port;
   const secure = port === 465 || process.env.SMTP_SECURE === 'true';
 
   if (config.host && config.user && config.pass) {
+    // For cloud environments (e.g. Render/AWS/Vercel), explicit host/port with family: 4 is much more reliable than service: 'gmail'
     return nodemailer.createTransport({
-      host: config.host,
-      port,
-      secure,
+      host: config.host || 'smtp.gmail.com',
+      port: port === 587 ? 587 : 465,
+      secure: port === 465 || port !== 587, // true for 465, false for 587
       auth: {
         user: config.user,
         pass: config.pass,
       },
       tls: {
         rejectUnauthorized: false,
-        servername: config.host
+        servername: config.host || 'smtp.gmail.com'
       },
-      family: 4, // FORCE IPV4 ONLY: Fixes ENETUNREACH / IPv6 connection timeouts on Render
+      family: 4, // FORCE IPV4 ONLY: Fixes ENETUNREACH / IPv6 connection timeouts on Render & cloud hosts
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000
@@ -84,36 +85,34 @@ export async function sendEmail({ to, subject, html, emailType }) {
         html
       });
       success = true;
-      console.log(`✅ Email successfully delivered to ${to} via SMTP!`);
+      console.log(`✅ Email successfully delivered to ${to} via primary transporter!`);
     } catch (err) {
-      console.error('❌ Nodemailer primary send error:', err.message);
+      console.error('❌ Primary send error:', err.message);
       errorMsg = err.message;
 
-      // Automatic Fallback to SSL Port 465 (IPv4) if Port 587 fails on Cloud Host
-      if (config.port !== 465) {
-        console.log('🔄 Attempting fallback delivery via Gmail SSL Port 465 (IPv4)...');
-        try {
-          const fallbackTransporter = createTransporterForConfig(465);
-          if (fallbackTransporter) {
-            await fallbackTransporter.sendMail({
-              from: config.from,
-              to,
-              subject,
-              html
-            });
-            success = true;
-            errorMsg = null;
-            console.log(`✅ Fallback delivery succeeded via SSL Port 465 to ${to}!`);
-          }
-        } catch (fallbackErr) {
-          console.error('❌ Fallback delivery also failed:', fallbackErr.message);
-          errorMsg = `Primary (587): ${err.message} | Fallback (465): ${fallbackErr.message}`;
+      // Fallback: Try custom SMTP Port 465 (IPv4)
+      console.log('🔄 Attempting fallback delivery via SSL Port 465 (IPv4)...');
+      try {
+        const fallbackTransporter = createTransporterForConfig(465, true);
+        if (fallbackTransporter) {
+          await fallbackTransporter.sendMail({
+            from: config.from,
+            to,
+            subject,
+            html
+          });
+          success = true;
+          errorMsg = null;
+          console.log(`✅ Fallback delivery succeeded via SSL Port 465 to ${to}!`);
         }
+      } catch (fallbackErr) {
+        console.error('❌ Fallback delivery failed:', fallbackErr.message);
+        errorMsg = `Primary: ${err.message} | Fallback (465): ${fallbackErr.message}`;
       }
     }
   } else {
     console.log('⚠️ Transporter not initialized. Missing SMTP credentials.');
-    errorMsg = 'Missing SMTP credentials on server';
+    errorMsg = 'Missing SMTP credentials on server (EMAIL_USER / EMAIL_PASSWORD)';
   }
 
   await logEmail({
