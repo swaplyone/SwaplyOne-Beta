@@ -224,14 +224,11 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       );
       const data = await res.json();
 
-      if (data.success) {
-        if (data.debugCode) {
-          setServerDebugCode(data.debugCode);
-        }
+      if (data.success && data.emailSent !== false) {
         showMorphBar({
-          type: data.emailSent === false ? 'warning' : 'success',
-          title: data.emailSent === false ? 'Code Generated' : 'Code Sent!',
-          message: data.message || `6-digit code sent to ${formData.email}`,
+          type: 'success',
+          title: 'Code Sent!',
+          message: data.message || `6-digit verification code sent to ${formData.email}`,
           duration: 6000
         });
         setCooldown(data.cooldownSeconds || 60);
@@ -240,7 +237,7 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
         showMorphBar({
           type: 'error',
           title: 'Unable to Send Code',
-          message: data.message || 'Error requesting verification code.'
+          message: data.message || 'Error sending verification email. Please try again.'
         });
       }
     } catch (err) {
@@ -273,21 +270,18 @@ export default function BetaTesterPage({ onBackToHome, onOpenJoinModal }) {
       });
       const data = await res.json();
 
-      if (data.success) {
-        if (data.debugCode) {
-          setServerDebugCode(data.debugCode);
-        }
+      if (data.success && data.emailSent !== false) {
         showMorphBar({
-          type: data.emailSent === false ? 'warning' : 'success',
-          title: data.emailSent === false ? 'Code Re-generated' : 'Code Resent!',
-          message: data.message || `New code sent to ${formData.email}`
+          type: 'success',
+          title: 'Code Resent!',
+          message: data.message || `New verification code sent to ${formData.email}`
         });
         setCooldown(60);
       } else {
         showMorphBar({
           type: 'error',
           title: 'Resend Failed',
-          message: data.message
+          message: data.message || 'Unable to resend verification code. Please try again.'
         });
       }
     } catch (err) {

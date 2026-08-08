@@ -233,19 +233,28 @@ router.post('/otp/send', async (req, res) => {
     await saveOtp(cleanEmail, newRecord);
 
     // Send email
-    const emailSent = await sendOtpEmail(cleanEmail, otpCode);
+    const emailResult = await sendOtpEmail(cleanEmail, otpCode);
 
-    const isFounder = cleanEmail === 'founder@swaplyone.in';
-    const isDev = process.env.NODE_ENV !== 'production';
+    if (!emailResult.success) {
+      console.warn(`⚠️ OTP Email delivery failed for ${cleanEmail}`);
 
-    if (!emailSent) {
-      console.warn(`⚠️ OTP Email delivery failed for ${cleanEmail}. Returning verification code fallback.`);
-      return res.json({
-        success: true,
+      // Development-only fallback: Allow debugCode ONLY when NODE_ENV !== 'production' and ENABLE_DEV_OTP is explicitly enabled
+      if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEV_OTP === 'true') {
+        return res.json({
+          success: true,
+          emailSent: false,
+          debugCode: otpCode,
+          message: `[DEV ONLY] Verification code: ${otpCode}`,
+          cooldownSeconds: 60
+        });
+      }
+
+      // Production behavior: Return clear error message, never expose OTP or provider details
+      return res.status(400).json({
+        success: false,
         emailSent: false,
-        debugCode: otpCode,
-        message: `OTP Code generated: ${otpCode}. (SMTP delivery blocked on server). Enter code below to verify.`,
-        cooldownSeconds: 60
+        message: 'Unable to send verification email. Please check your email address or try again.',
+        cooldownSeconds: 15
       });
     }
 

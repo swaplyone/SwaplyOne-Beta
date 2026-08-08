@@ -65,8 +65,9 @@ async function createTransporterForConfigAsync(overridePort = null) {
   return null;
 }
 
-// Send email via Resend HTTPS API (Port 443 - Never blocked by cloud host firewalls)
+// Send email via Resend HTTPS API (Port 443 - Official Resend REST API)
 async function sendViaResend(apiKey, { to, subject, html, from }) {
+  console.log(`📨 Email provider: Resend`);
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -81,44 +82,19 @@ async function sendViaResend(apiKey, { to, subject, html, from }) {
         html
       })
     });
-    if (res.ok) {
-      console.log(`✅ Email successfully delivered to ${to} via Resend HTTP API!`);
-      return true;
-    }
-    const errData = await res.json().catch(() => ({}));
-    console.error('❌ Resend API error:', errData);
-  } catch (err) {
-    console.error('❌ Resend API request failed:', err.message);
-  }
-  return false;
-}
 
-// Send email via Brevo / Sendinblue HTTPS API (Port 443 - Never blocked by cloud host firewalls)
-async function sendViaBrevo(apiKey, { to, subject, html, from }) {
-  try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        sender: { name: 'SwaplyOne', email: process.env.EMAIL_USER || 'founder@swaplyone.in' },
-        to: [{ email: to }],
-        subject,
-        htmlContent: html
-      })
-    });
     if (res.ok) {
-      console.log(`✅ Email successfully delivered to ${to} via Brevo HTTP API!`);
-      return true;
+      console.log(`✅ OTP email sent successfully via Resend!`);
+      return { success: true, provider: 'resend' };
     }
+
     const errData = await res.json().catch(() => ({}));
-    console.error('❌ Brevo API error:', errData);
+    console.error(`❌ Resend email delivery failed (Status ${res.status})`);
+    return { success: false, provider: 'resend', error: errData.message || 'Resend API returned error status' };
   } catch (err) {
-    console.error('❌ Brevo API request failed:', err.message);
+    console.error(`❌ Resend email delivery failed:`, err.message);
+    return { success: false, provider: 'resend', error: err.message };
   }
-  return false;
 }
 
 export async function logEmail(emailLog) {
@@ -135,92 +111,87 @@ export async function logEmail(emailLog) {
       localStore.data.email_logs.unshift(record);
     }
   } catch (err) {
-    console.error('Failed to log email:', err.message);
+    console.error('Failed to log email record');
   }
 }
 
 export async function sendEmail({ to, subject, html, emailType }) {
   console.log(`\n========================================`);
-  console.log(`📧 SENDING EMAIL [${emailType.toUpperCase()}] TO: ${to}`);
-  console.log(`Subject: ${subject}`);
+  console.log(`📧 Sending ${emailType.toUpperCase()} email`);
   console.log(`========================================\n`);
 
-  let success = false;
-  let errorMsg = null;
   const config = getEmailConfig();
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  // 1. Try Resend HTTP API if RESEND_API_KEY is configured
+  // 1. HIGHEST PRIORITY: Resend HTTPS API (Recommended for Cloud / Render)
   if (process.env.RESEND_API_KEY) {
-    const resendSuccess = await sendViaResend(process.env.RESEND_API_KEY, { to, subject, html, from: config.from });
-    if (resendSuccess) {
-      await logEmail({ to, subject, emailType, status: 'SENT', error: null, bodySnippet: html.replace(/<[^>]+>/g, '').substring(0, 120) });
-      return true;
-    }
+    const resendResult = await sendViaResend(process.env.RESEND_API_KEY, { to, subject, html, from: config.from });
+    await logEmail({
+      to,
+      subject,
+      emailType,
+      status: resendResult.success ? 'SENT' : 'FAILED',
+      error: resendResult.error || null,
+      provider: 'resend'
+    });
+    return resendResult;
   }
 
-  // 2. Try Brevo HTTP API if BREVO_API_KEY / SENDINBLUE_API_KEY is configured
-  const brevoKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
-  if (brevoKey) {
-    const brevoSuccess = await sendViaBrevo(brevoKey, { to, subject, html, from: config.from });
-    if (brevoSuccess) {
-      await logEmail({ to, subject, emailType, status: 'SENT', error: null, bodySnippet: html.replace(/<[^>]+>/g, '').substring(0, 120) });
-      return true;
-    }
-  }
+  // 2. SECOND PRIORITY: Gmail SMTP (For Local Development or explicitly enabled SMTP)
+  if (!isProduction || (config.user && config.pass && process.env.ALLOW_PRODUCTION_SMTP === 'true')) {
+    console.log(`📨 Email provider: Gmail SMTP`);
+    const primaryTransporter = await createTransporterForConfigAsync();
 
-  // 3. Fallback to Nodemailer SMTP Transporter
-  const primaryTransporter = await createTransporterForConfigAsync();
-
-  if (primaryTransporter) {
-    try {
-      await primaryTransporter.sendMail({
-        from: config.from,
-        to,
-        subject,
-        html
-      });
-      success = true;
-      console.log(`✅ Email successfully delivered to ${to} via primary transporter (${config.port})!`);
-    } catch (err) {
-      console.error(`❌ Primary send error (port ${config.port}):`, err.message);
-      errorMsg = err.message;
-
-      // Fallback: Try alternative SMTP Port (e.g. 587 vs 465) with explicit IPv4 IP
-      const fallbackPort = config.port === 465 ? 587 : 465;
-      console.log(`🔄 Attempting fallback delivery via Port ${fallbackPort} (Direct IPv4)...`);
+    if (primaryTransporter) {
       try {
-        const fallbackTransporter = await createTransporterForConfigAsync(fallbackPort);
-        if (fallbackTransporter) {
-          await fallbackTransporter.sendMail({
-            from: config.from,
-            to,
-            subject,
-            html
-          });
-          success = true;
-          errorMsg = null;
-          console.log(`✅ Fallback delivery succeeded via Port ${fallbackPort} to ${to}!`);
+        await primaryTransporter.sendMail({
+          from: config.from,
+          to,
+          subject,
+          html
+        });
+        console.log(`✅ OTP email sent successfully via Gmail SMTP!`);
+        await logEmail({ to, subject, emailType, status: 'SENT', error: null, provider: 'smtp' });
+        return { success: true, provider: 'smtp' };
+      } catch (err) {
+        console.error(`❌ Gmail SMTP primary send error (port ${config.port})`);
+        
+        // Fallback port attempt for local dev
+        const fallbackPort = config.port === 465 ? 587 : 465;
+        try {
+          const fallbackTransporter = await createTransporterForConfigAsync(fallbackPort);
+          if (fallbackTransporter) {
+            await fallbackTransporter.sendMail({
+              from: config.from,
+              to,
+              subject,
+              html
+            });
+            console.log(`✅ OTP email sent successfully via Gmail SMTP fallback (${fallbackPort})!`);
+            await logEmail({ to, subject, emailType, status: 'SENT', error: null, provider: 'smtp_fallback' });
+            return { success: true, provider: 'smtp' };
+          }
+        } catch (fallbackErr) {
+          console.error(`❌ Gmail SMTP fallback send error (port ${fallbackPort})`);
         }
-      } catch (fallbackErr) {
-        console.error('❌ Fallback delivery failed:', fallbackErr.message);
-        errorMsg = `Primary (${config.port}): ${err.message} | Fallback (${fallbackPort}): ${fallbackErr.message}`;
+
+        await logEmail({ to, subject, emailType, status: 'FAILED', error: err.message, provider: 'smtp' });
+        return { success: false, provider: 'smtp', error: err.message };
       }
     }
-  } else {
-    console.log('⚠️ Transporter not initialized. Missing SMTP credentials.');
-    errorMsg = 'Missing SMTP credentials on server (EMAIL_USER / EMAIL_PASSWORD)';
   }
 
+  // 3. NO VALID PROVIDER CONFIGURED IN PRODUCTION
+  console.warn(`⚠️ No email provider configured. Please set RESEND_API_KEY in environment variables.`);
   await logEmail({
     to,
     subject,
     emailType,
-    status: success ? 'SENT' : 'FAILED',
-    error: errorMsg,
-    bodySnippet: html.replace(/<[^>]+>/g, '').substring(0, 120) + '...'
+    status: 'FAILED',
+    error: 'Missing RESEND_API_KEY in environment variables',
+    provider: 'none'
   });
-
-  return success;
+  return { success: false, provider: 'none', error: 'No email service configured on server' };
 }
 
 export async function sendOtpEmail(email, otp) {
