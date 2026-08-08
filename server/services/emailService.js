@@ -71,6 +71,7 @@ async function createTransporterForConfigAsync(overridePort = null) {
 // Send email via Resend HTTPS API (Port 443 - Official Resend REST API)
 async function sendViaResend(apiKey, { to, subject, html, from }) {
   console.log(`📨 Email provider: Resend`);
+  const sender = process.env.RESEND_FROM || 'SwaplyOne <onboarding@resend.dev>';
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -79,7 +80,7 @@ async function sendViaResend(apiKey, { to, subject, html, from }) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: from || 'SwaplyOne <onboarding@resend.dev>',
+        from: sender,
         to: [to],
         subject,
         html
