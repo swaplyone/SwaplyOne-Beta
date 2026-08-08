@@ -4,10 +4,12 @@ import { AnimatePresence } from 'framer-motion';
 import DynamicIslandNav from './components/DynamicIslandNav';
 import Footer from './components/Footer';
 import JoinModal from './components/JoinModal';
+import PaperBetaCountdown from './components/PaperBetaCountdown';
 import { useLenis } from './hooks/useLenis';
 import { checkIsPreloaded } from './utils/frameCache';
 import LoadingPage from './pages/LoadingPage';
 import { MorphBarProvider } from './context/MorphBarContext';
+import { isSiteUnlocked } from './config/launchConfig';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -65,6 +67,8 @@ function AppContent() {
 
 export default function App() {
   const [isPreloaded, setIsPreloaded] = useState(() => checkIsPreloaded());
+  const [isUnlocked, setIsUnlocked] = useState(() => isSiteUnlocked());
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
   return (
     <AnimatePresence mode="wait">
@@ -72,7 +76,20 @@ export default function App() {
         <LoadingPage key="loading-page" onComplete={() => setIsPreloaded(true)} />
       ) : (
         <Router key="main-app">
-          <AppContent />
+          {!isUnlocked ? (
+            <div className="min-h-screen bg-[#FBF5EC]">
+              <PaperBetaCountdown
+                onOpenJoinModal={() => setIsJoinModalOpen(true)}
+                onUnlockSuccess={() => setIsUnlocked(true)}
+              />
+              <JoinModal
+                isOpen={isJoinModalOpen}
+                onClose={() => setIsJoinModalOpen(false)}
+              />
+            </div>
+          ) : (
+            <AppContent />
+          )}
         </Router>
       )}
     </AnimatePresence>

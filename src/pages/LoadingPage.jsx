@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { preloadAllFrames, frameImagesCache } from '../utils/frameCache';
 
 const TOTAL_FRAMES = 192;
@@ -58,23 +57,14 @@ export default function LoadingPage({ onComplete }) {
       const checkmarkTimer = setTimeout(() => {
         setShowCheckmark(true);
 
-        try {
-          confetti({
-            particleCount: 65,
-            spread: 65,
-            origin: { y: 0.5 },
-            colors: ['#C49A62', '#1B242A', '#65AB84', '#FBF5EC']
-          });
-        } catch {}
-
         const completeTimer = setTimeout(() => {
           if (onCompleteRef.current) {
             onCompleteRef.current();
           }
-        }, 750);
+        }, 500);
 
         return () => clearTimeout(completeTimer);
-      }, 120);
+      }, 100);
 
       return () => clearTimeout(checkmarkTimer);
     }
